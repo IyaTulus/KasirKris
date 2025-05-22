@@ -1,27 +1,31 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import { useEffect, useState } from 'react';
+import { Stack, router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+export default function AuthLayout() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+  useEffect(() => {
+    const checkLogin = async () => {
+      try {
+        const user = await AsyncStorage.getItem('user');
+        if (user) {
+          setIsLoggedIn(true);
+          router.replace('/dashboard/dashboard');
+        }
+      } catch (e) {
+        console.log('Gagal mengecek login:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (!loaded) {
-    // Async font loading only occurs in development.
-    return null;
-  }
+    checkLogin();
+  }, []);
 
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        
-      </Stack>
-    </ThemeProvider>
-  );
+  if (loading) return null;
+  if (isLoggedIn) return null;
+
+  return <Stack />;
 }

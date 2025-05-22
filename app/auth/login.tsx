@@ -1,136 +1,172 @@
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { loginUser } from '../../hooks/useAuth';
-import { navigate } from 'expo-router/build/global-state/routing';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = () => {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-    const router = useRouter();
+  const handleLogin = async () => {
+    setLoading(true);
+    try {
+      const user = await loginUser(username, password);
+      if (user) {
+        await AsyncStorage.setItem('user', JSON.stringify(user)); // simpan session
+        Alert.alert('Sukses', 'Berhasil masuk!');
+        setUsername('');
+        setPassword('');
+        router.replace('/dashboard/dashboard'); // redirect ke dashboard
+      }
+    } catch (error: any) {
+      Alert.alert('Gagal', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleLogin = async () => {
-        setLoading(true);
-        try {
-            const user = await loginUser(username, password);
-            Alert.alert('Sukses', 'Berhasil masuk!');
-            setUsername('');
-            setPassword('');
-            // Mengirim user_id ke dashboard sebagai parameter
-            router.replace({ pathname: '/dashboard/dashboard', params: { user_id: user?.user_id } });
-        } catch (error: any) {
-            Alert.alert('Gagal', error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
+  return (
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.container}
+      >
+        <View style={styles.card}>
+          <Text style={styles.title}>Selamat Datang 👋</Text>
+          <Text style={styles.subtitle}>Masuk ke akun Anda</Text>
 
-    return (
-        <>
-        <Stack.Screen
-                options={{
-                    headerShown: false,
-                }}
+          <View style={styles.inputContainer}>
+            <FontAwesome name="user" size={20} color="#1976D2" style={styles.icon} />
+            <TextInput
+              placeholder="Username"
+              style={styles.input}
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+              placeholderTextColor="#999"
             />
-        <View style={styles.container}>
-            <Text style={styles.title}>Masuk</Text>
-            <View style={styles.inputContainer}>
-                <FontAwesome name="user" size={22} color="#888" style={styles.icon} />
-                <TextInput
-                    placeholder="Username"
-                    style={styles.input}
-                    value={username}
-                    onChangeText={setUsername}
-                    autoCapitalize="none"
-                />
-            </View>
-            <View style={styles.inputContainer}>
-                <MaterialIcons name="lock" size={22} color="#888" style={styles.icon} />
-                <TextInput
-                    placeholder="Password"
-                    secureTextEntry
-                    style={styles.input}
-                    value={password}
-                    onChangeText={setPassword}
-                />
-            </View>
-            <TouchableOpacity
-                style={[styles.button, loading && { backgroundColor: '#aaa' }]}
-                onPress={handleLogin}
-                disabled={loading}
-            >
-                <Text style={styles.buttonText}>{loading ? 'Masuk...' : 'Masuk'}</Text>
-            </TouchableOpacity>
-            <View style={{ alignItems: 'center', marginTop: 18 }}>
-                <Text>
-                    Belum punya akun?{' '}
-                    <Text
-                        style={{ color: '#0984e3', fontWeight: 'bold' }}
-                        onPress={() => navigate('/auth/register')}
-                    >
-                        Daftar
-                    </Text>
-                </Text>
-            </View>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <MaterialIcons name="lock" size={20} color="#1976D2" style={styles.icon} />
+            <TextInput
+              placeholder="Password"
+              secureTextEntry
+              style={styles.input}
+              value={password}
+              onChangeText={setPassword}
+              placeholderTextColor="#999"
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[styles.button, loading && { backgroundColor: '#aaa' }]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>{loading ? 'Masuk...' : 'Masuk'}</Text>
+          </TouchableOpacity>
+
+          <View style={styles.registerContainer}>
+            <Text style={styles.registerText}>
+              Belum punya akun?{' '}
+              <Text style={styles.registerLink} onPress={() => router.push('/auth/register')}>
+                Daftar
+              </Text>
+            </Text>
+          </View>
         </View>
-        </>
-    );
+      </KeyboardAvoidingView>
+    </>
+  );
 };
 
 export default LoginScreen;
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        padding: 24,
-        backgroundColor: '#f7f8fa',
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#2d3436',
-        marginBottom: 32,
-        alignSelf: 'center',
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#e0e0e0',
-        marginBottom: 18,
-        paddingHorizontal: 12,
-        shadowColor: '#000',
-        shadowOpacity: 0.03,
-        shadowRadius: 2,
-        elevation: 1,
-    },
-    icon: {
-        marginRight: 8,
-    },
-    input: {
-        flex: 1,
-        height: 48,
-        fontSize: 16,
-        color: '#333',
-    },
-    button: {
-        backgroundColor: '#0984e3',
-        paddingVertical: 14,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 10,
-        elevation: 2,
-    },
-    buttonText: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: 'bold',
-        letterSpacing: 1,
-    },
+  container: {
+    flex: 1,
+    backgroundColor: '#E3F2FD',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#0D47A1',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#555',
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.2,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 18,
+    backgroundColor: '#fafafa',
+  },
+  icon: {
+    marginRight: 8,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  button: {
+    backgroundColor: '#1976D2',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  registerContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  registerText: {
+    color: '#333',
+    fontSize: 14,
+  },
+  registerLink: {
+    color: '#1976D2',
+    fontWeight: '600',
+  },
 });

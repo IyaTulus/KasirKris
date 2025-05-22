@@ -2,8 +2,6 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
@@ -14,19 +12,20 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  const { user } = useAuth(); // misal dari context kamu
+  const { user, loading } = useAuth();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // cek status login
-    if (user) {
-      router.replace('/dashboard/dashboard'); // arahkan langsung ke dashboard
+    if (!loading) {
+      if (user) {
+        router.replace('/dashboard/dashboard'); // redirect ke dashboard jika login
+      } else {
+        router.replace('/auth/login'); // redirect ke login jika belum login
+      }
     }
-    setLoading(false);
-  }, [user]);
+  }, [user, loading]);
 
-  if (loading) return null;
+  if (!loaded || loading) return null;
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -35,6 +34,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
+      <StatusBar style="auto" />
     </ThemeProvider>
   );
 }

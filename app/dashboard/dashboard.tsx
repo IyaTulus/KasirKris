@@ -1,148 +1,353 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
+import { FontAwesome5 } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
+import { navigate } from 'expo-router/build/global-state/routing';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const DashboardKasir = () => {
+const { width } = Dimensions.get('window');
+
+interface User {
+  name: string;
+  username: string;
+  role: string;
+  user_id: string;
+}
+
+interface InfoCardData {
+  title: string;
+  amount: string;
+  color: string;
+}
+
+interface TransactionData {
+  id: string;
+  date: string;
+  time: string;
+}
+
+const DashboardKasir: React.FC = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
+
+  // Data untuk info cards
+  const infoCardsData: InfoCardData[] = [
+    { title: 'Pemasukan', amount: 'Rp 3.250.000', color: '#2ecc71' },
+    { title: 'Pengeluaran', amount: 'Rp 800.000', color: '#e74c3c' },
+    { title: 'Hutang', amount: 'Rp 1.200.000', color: '#f1c40f' },
+    { title: 'Stok Barang', amount: '342 Item', color: '#2980b9' },
+  ];
+
+  // Data untuk transaksi terbaru
+  const recentTransactions: TransactionData[] = [
+    { id: 'INV-001', date: '20 Mei 2023', time: '14:30' },
+    { id: 'INV-002', date: '20 Mei 2023', time: '15:45' },
+  ];
+
+  // Data untuk pembelian terbaru
+  const recentPurchases: TransactionData[] = [
+    { id: 'PB-001', date: '19 Mei 2023', time: '13:00' },
+    { id: 'PB-002', date: '18 Mei 2023', time: '16:20' },
+  ];
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async (): Promise<void> => {
+    try {
+      const storedUser = await AsyncStorage.getItem('user');
+      if (storedUser) {
+        const parsedUser: User = JSON.parse(storedUser);
+        setUser(parsedUser);
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+  };
+
+  const handleSettingsPress = (): void => {
+    navigate('/settings/seting');
+  };
+
+  const renderHeader = () => (
+    <View style={styles.appBar}>
+      <Text style={styles.appBarText}>Dashboard Kasir</Text>
+      <TouchableOpacity onPress={handleSettingsPress}>
+        <FontAwesome5 name="cog" size={20} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderTotalSalesCard = () => (
+    <View style={styles.totalSalesCard}>
+      <View>
+        <Text style={styles.totalSalesLabel}>Total Penjualan Hari Ini</Text>
+        <Text style={styles.totalSalesAmount}>Rp 2.450.000</Text>
+      </View>
+      <FontAwesome5 name="calculator" size={24} color="#fff" />
+    </View>
+  );
+
+  const renderInfoCard = (item: InfoCardData, index: number) => (
+    <View key={index} style={styles.infoCard}>
+      <Text style={[styles.infoCardTitle, { color: item.color }]}>
+        {item.title}
+      </Text>
+      <Text style={styles.infoCardAmount}>{item.amount}</Text>
+    </View>
+  );
+
+  const renderMenuButtons = () => (
+    <View style={styles.menuButtonsContainer}>
+      {user?.role === 'admin' && (
+        <>
+          <TouchableOpacity
+            style={[styles.menuButton, styles.menuButtonLaporan]}
+          >
+            <Text style={styles.menuButtonText}>Laporan</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.menuButton, styles.menuButtonOther]}
+          >
+            <Text style={styles.menuButtonText}>Button</Text>
+          </TouchableOpacity>
+        </>
+      )}
+      <TouchableOpacity
+        style={[styles.menuButton, styles.menuButtonKasir]}
+      >
+        <Text style={styles.menuButtonText}>Kasir</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderTransactionItem = (item: TransactionData, type: 'sale' | 'purchase') => (
+    <View key={item.id} style={styles.transactionItem}>
+      <Text style={styles.transactionId}>
+        {type === 'sale' ? 'Penjualan' : 'Pembelian'} #{item.id}
+      </Text>
+      <Text style={styles.transactionDateTime}>
+        {item.date} - {item.time}
+      </Text>
+    </View>
+  );
+
+  const renderTransactionSection = (
+    title: string,
+    data: TransactionData[],
+    type: 'sale' | 'purchase'
+  ) => (
+    <View style={styles.transactionSection}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {data.map((item) => renderTransactionItem(item, type))}
+    </View>
+  );
+
   return (
-    <ScrollView style={styles.container}>
-      {/* AppBar */}
-      <View style={styles.appBar}>
-        <Text style={styles.appBarText}>Dashboard Kasir</Text>
-        <FontAwesome5 name="bell" size={20} color="#fff" />
-      </View>
+    <>
+      <Stack.Screen
+        options={{
+          header: renderHeader,
+        }}
+      />
+      <ScrollView 
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Total Penjualan Card */}
+        {renderTotalSalesCard()}
 
-      {/* Total Penjualan */}
-      <View style={styles.totalSalesCard}>
-        <View>
-          <Text style={styles.label}>Total Penjualan Hari Ini</Text>
-          <Text style={styles.totalAmount}>Rp 2.450.000</Text>
+        {/* Info Cards Container */}
+        <View style={styles.infoCardsContainer}>
+          {infoCardsData.map((item, index) => renderInfoCard(item, index))}
         </View>
-        <FontAwesome5 name="calculator" size={24} color="#fff" />
-      </View>
 
-      {/* 4 Info Cards */}
-      <View style={styles.infoCardsContainer}>
-        <View style={styles.infoCard}>
-          <Text style={[styles.infoText, { color: '#2ecc71' }]}>Pemasukan</Text>
-          <Text style={styles.infoAmount}>Rp 3.250.000</Text>
-        </View>
-        <View style={styles.infoCard}>
-          <Text style={[styles.infoText, { color: '#e74c3c' }]}>Pengeluaran</Text>
-          <Text style={styles.infoAmount}>Rp 800.000</Text>
-        </View>
-        <View style={styles.infoCard}>
-          <Text style={[styles.infoText, { color: '#f1c40f' }]}>Hutang</Text>
-          <Text style={styles.infoAmount}>Rp 1.200.000</Text>
-        </View>
-        <View style={styles.infoCard}>
-          <Text style={[styles.infoText, { color: '#2980b9' }]}>Stok Barang</Text>
-          <Text style={styles.infoAmount}>342 Item</Text>
-        </View>
-      </View>
+        {/* Menu Buttons */}
+        {renderMenuButtons()}
 
-      {/* Menu Buttons */}
-      <View style={styles.menuButtons}>
-        <TouchableOpacity style={[styles.menuButton, { backgroundColor: '#1abc9c' }]}>
-          <Text style={styles.menuText}>Laporan</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.menuButton, { backgroundColor: '#e67e22' }]}>
-          <Text style={styles.menuText}>Button</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.menuButton, { backgroundColor: '#8e44ad' }]}>
-          <Text style={styles.menuText}>Kasir</Text>
-        </TouchableOpacity>
-      </View>
+        {/* Transaksi Terbaru */}
+        {renderTransactionSection(
+          'Transaksi Terbaru',
+          recentTransactions,
+          'sale'
+        )}
 
-      {/* Transaksi Terbaru */}
-      <Text style={styles.sectionTitle}>Transaksi Terbaru</Text>
-      <View style={styles.transactionItem}>
-        <Text>Penjualan #INV-001</Text>
-        <Text>20 Mei 2023 - 14:30</Text>
-      </View>
-      <View style={styles.transactionItem}>
-        <Text>Penjualan #INV-002</Text>
-        <Text>20 Mei 2023 - 15:45</Text>
-      </View>
-
-      {/* Pembelian Terbaru */}
-      <Text style={styles.sectionTitle}>Pembelian Terbaru</Text>
-      <View style={styles.transactionItem}>
-        <Text>Pembelian #PB-001</Text>
-        <Text>19 Mei 2023 - 13:00</Text>
-      </View>
-      <View style={styles.transactionItem}>
-        <Text>Pembelian #PB-002</Text>
-        <Text>18 Mei 2023 - 16:20</Text>
-      </View>
-    </ScrollView>
+        {/* Pembelian Terbaru */}
+        {renderTransactionSection(
+          'Pembelian Terbaru',
+          recentPurchases,
+          'purchase'
+        )}
+      </ScrollView>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#ecf0f1' },
+  // Container Styles
+  container: {
+    flex: 1,
+    backgroundColor: '#ecf0f1',
+  },
+  scrollContent: {
+    padding: width * 0.04,
+    paddingBottom: width * 0.08,
+  },
+
+  // Header Styles
   appBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#6c5ce7',
-    padding: 16,
+    paddingHorizontal: width * 0.04,
+    paddingVertical: width * 0.025,
+    paddingTop: 32,
+    height: 90,
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
   },
-  appBarText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  appBarText: {
+    color: '#fff',
+    fontSize: width * 0.05,
+    fontWeight: 'bold',
+  },
 
+  // Total Sales Card Styles
   totalSalesCard: {
     flexDirection: 'row',
     backgroundColor: '#6c5ce7',
-    padding: 16,
+    padding: width * 0.04,
     marginTop: 10,
     borderRadius: 10,
     justifyContent: 'space-between',
     alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  label: { color: '#fff' },
-  totalAmount: { fontSize: 20, color: '#fff', fontWeight: 'bold' },
+  totalSalesLabel: {
+    color: '#fff',
+    fontSize: width * 0.035,
+    opacity: 0.9,
+  },
+  totalSalesAmount: {
+    fontSize: width * 0.055,
+    color: '#fff',
+    fontWeight: 'bold',
+    marginTop: 4,
+  },
 
+  // Info Cards Styles
   infoCardsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginTop: 16,
+    gap: 8,
   },
   infoCard: {
-    width: '48%',
+    width: width > 400 ? '48%' : '100%',
     backgroundColor: '#fff',
-    padding: 12,
+    padding: width * 0.04,
     borderRadius: 10,
-    marginBottom: 12,
+    marginBottom: 8,
     elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
   },
-  infoText: { fontSize: 14, fontWeight: 'bold' },
-  infoAmount: { marginTop: 4, fontSize: 16, fontWeight: 'bold' },
+  infoCardTitle: {
+    fontSize: width * 0.035,
+    fontWeight: '600',
+  },
+  infoCardAmount: {
+    marginTop: 8,
+    fontSize: width * 0.045,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
 
-  menuButtons: {
-    flexDirection: 'row',
+  // Menu Buttons Styles
+  menuButtonsContainer: {
+    flexDirection: width > 400 ? 'row' : 'column',
     justifyContent: 'space-around',
-    marginTop: 12,
-  },
-  menuButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-  },
-  menuText: { color: '#fff', fontWeight: 'bold' },
-
-  sectionTitle: {
+    alignItems: 'center',
     marginTop: 20,
     marginBottom: 8,
-    fontSize: 16,
+    gap: 10,
+  },
+  menuButton: {
+    paddingVertical: width * 0.03,
+    paddingHorizontal: width * 0.07,
+    borderRadius: 10,
+    minWidth: width > 400 ? width * 0.25 : '100%',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  menuButtonLaporan: {
+    backgroundColor: '#1abc9c',
+  },
+  menuButtonOther: {
+    backgroundColor: '#e67e22',
+  },
+  menuButtonKasir: {
+    backgroundColor: '#8e44ad',
+  },
+  menuButtonText: {
+    color: '#fff',
     fontWeight: 'bold',
+    fontSize: width * 0.04,
+  },
+
+  // Transaction Section Styles
+  transactionSection: {
+    marginTop: 20,
+  },
+  sectionTitle: {
+    marginBottom: 12,
+    fontSize: width * 0.045,
+    fontWeight: 'bold',
+    color: '#2c3e50',
   },
   transactionItem: {
     backgroundColor: '#fff',
-    padding: 12,
+    padding: width * 0.04,
     borderRadius: 8,
     marginBottom: 8,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    borderLeftWidth: 3,
+    borderLeftColor: '#6c5ce7',
+  },
+  transactionId: {
+    fontSize: width * 0.038,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 4,
+  },
+  transactionDateTime: {
+    fontSize: width * 0.032,
+    color: '#7f8c8d',
   },
 });
 

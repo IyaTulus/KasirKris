@@ -1,107 +1,105 @@
-import { FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
-import { navigate } from 'expo-router/build/global-state/routing';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { View, Text, StyleSheet, Image, Dimensions, TouchableOpacity } from 'react-native';
+import AppIntroSlider from 'react-native-app-intro-slider';
+import { LinearGradient } from 'expo-linear-gradient';
+import { navigate } from 'expo-router/build/global-state/routing';
 
-const WelcomePage = () => {
+const { width } = Dimensions.get('window');
+
+const slides = [
+  {
+    key: '1',
+    title: 'Catat Penjualan Lebih Mudah',
+    text: 'Kelola transaksi secara efisien dan akurat dalam genggaman Anda.',
+    image: require('../assets/images/sales.png'),
+  },
+  {
+    key: '2',
+    title: 'Kelola Hutang Pelanggan',
+    text: 'Sistem cicilan otomatis, pantau pembayaran yang belum lunas.',
+    image: require('../assets/images/debt.png'),
+  },
+  {
+    key: '3',
+    title: 'Cetak Struk & Lacak Barang',
+    text: 'Integrasi printer thermal dan manajemen stok otomatis.',
+    image: require('../assets/images/receipt.png'),
+    isLast: true,
+  },
+];
+
+const OnboardingScreen = ({ navigation }: any) => {
+  const renderItem = ({ item }: any) => {
+    return (
+      <LinearGradient colors={['#E3F2FD', '#BBDEFB']} style={styles.slide}>
+        <Image source={item.image} style={styles.image} />
+        <Text style={styles.title}>{item.title}</Text>
+        <Text style={styles.text}>{item.text}</Text>
+
+        {item.isLast && (
+          <TouchableOpacity
+            style={styles.startButton}
+            onPress={() => navigate('/auth/login')} // ubah sesuai nama screen login kamu
+          >
+            <Text style={styles.startButtonText}>Mulai Sekarang</Text>
+          </TouchableOpacity>
+        )}
+      </LinearGradient>
+    );
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.iconWrapper}>
-        <MaterialCommunityIcons name="cash-register" size={64} color="#1976D2" />
-      </View>
-      <Text style={styles.title}>Selamat Datang di KasirKris</Text>
-      <Text style={styles.subtitle}>Aplikasi kasir profesional untuk UMKM modern</Text>
-      <View style={styles.buttonRow}>
-        <TouchableOpacity 
-          style={[styles.button, styles.loginButton]}
-          onPress={() => navigate('/auth/login')}
-        >
-          <FontAwesome5 name="sign-in-alt" size={20} color="#fff" style={styles.buttonIcon} />
-          <Text style={styles.buttonText}>Login</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.button, styles.registerButton]}
-          onPress={() => navigate('/auth/register')}
-        >
-          <FontAwesome5 name="user-plus" size={20} color="#fff" style={styles.buttonIcon} />
-          <Text style={styles.buttonText}>Register</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    <AppIntroSlider
+      renderItem={renderItem}
+      data={slides}
+      showNextButton={false}
+      showDoneButton={false}
+      showSkipButton={false}
+      dotStyle={{ backgroundColor: '#90CAF9' }}
+      activeDotStyle={{ backgroundColor: '#1976D2', width: 24 }}
+    />
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  slide: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F7FA',
-    padding: 24,
+    justifyContent: 'center',
+    padding: 32,
   },
-  iconWrapper: {
-    backgroundColor: '#E3F2FD',
-    borderRadius: 40,
-    padding: 18,
-    marginBottom: 18,
-    elevation: 4,
-    shadowColor: '#1976D2',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
+  image: {
+    width: width * 0.6,
+    height: width * 0.6,
+    resizeMode: 'contain',
+    marginBottom: 40,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#1976D2',
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#0D47A1',
     textAlign: 'center',
-    letterSpacing: 1,
+    marginBottom: 16,
   },
-  subtitle: {
-    fontSize: 17,
-    color: '#555',
-    marginBottom: 40,
+  text: {
+    fontSize: 16,
+    color: '#333',
     textAlign: 'center',
-    fontWeight: '500',
+    paddingHorizontal: 16,
+    marginBottom: 32,
   },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    width: '100%',
-    gap: 16, // Jika gap tidak didukung, gunakan marginRight di button
-  },
-  button: {
-    flexDirection: 'row',
-    flex: 1,
+  startButton: {
     backgroundColor: '#1976D2',
-    paddingVertical: 16,
-    borderRadius: 16,
-    marginBottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 10,
     elevation: 3,
-    marginHorizontal: 4,
   },
-  loginButton: {
-    backgroundColor: '#1976D2',
-  },
-  registerButton: {
-    backgroundColor: '#43A047',
-  },
-  buttonIcon: {
-    marginRight: 10,
-  },
-  buttonText: {
+  startButtonText: {
     color: '#fff',
     fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontWeight: '600',
   },
 });
 
-export default WelcomePage;
+export default OnboardingScreen;
