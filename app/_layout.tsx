@@ -20,7 +20,7 @@ export default function RootLayout() {
       if (user) {
         router.replace('/dashboard/dashboard'); // redirect ke dashboard jika login
       } else {
-        router.replace('/auth/login'); // redirect ke login jika belum login
+        router.replace('/'); // redirect ke login jika belum login
       }
     }
   }, [user, loading]);

@@ -1,7 +1,8 @@
-import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
+import { navigate } from 'expo-router/build/global-state/routing';
 import React, { useEffect, useState } from 'react';
 import {
     Alert,
@@ -23,16 +24,27 @@ interface User {
     user_id: string;
 }
 
+interface ActionItem {
+    title: string;
+    icon: keyof typeof MaterialIcons.glyphMap;
+    colors: [string, string]; // More specific type definition
+    onPress: () => void;
+}
+
 const SettingScreen: React.FC = () => {
     const [user, setUser] = useState<User | null>(null);
     const router = useRouter();
 
     useEffect(() => {
         const loadUser = async () => {
-            const stored = await AsyncStorage.getItem('user');
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                setUser(parsed);
+            try {
+                const stored = await AsyncStorage.getItem('user');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    setUser(parsed);
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
             }
         };
 
@@ -46,8 +58,12 @@ const SettingScreen: React.FC = () => {
                 text: 'Keluar',
                 style: 'destructive',
                 onPress: async () => {
-                    await AsyncStorage.removeItem('user');
-                    router.replace('/auth/login');
+                    try {
+                        await AsyncStorage.removeItem('user');
+                        router.replace('/auth/login');
+                    } catch (error) {
+                        console.error('Error during logout:', error);
+                    }
                 },
             },
         ]);
@@ -68,7 +84,7 @@ const SettingScreen: React.FC = () => {
                 return '#FF6B6B';
             case 'manager':
                 return '#4ECDC4';
-            case 'user':
+            case 'kasir':
                 return '#45B7D1';
             default:
                 return '#95A5A6';
@@ -77,13 +93,95 @@ const SettingScreen: React.FC = () => {
 
     const isAdmin = user?.role?.toLowerCase() === 'admin';
 
+    // Admin quick actions with explicit color arrays
+    const adminActions: ActionItem[] = [
+        {
+            title: 'Catatan Hutang Customer',
+            icon: 'person-outline',
+            colors: ['#4facfe', '#00f2fe'],
+            onPress: () => {
+                // Navigate to customer debt screen
+                console.log('Navigate to customer debt screen');
+            }
+        },
+        {
+            title: 'Catatan Hutang Toko',
+            icon: 'store',
+            colors: ['#43e97b', '#38f9d7'],
+            onPress: () => {
+                // Navigate to store debt screen
+                console.log('Navigate to store debt screen');
+            }
+        },
+        {
+            title: 'Pembelian',
+            icon: 'shopping-cart',
+            colors: ['#fa709a', '#fee140'],
+            onPress: () => {
+                // Navigate to purchase screen
+                console.log('Navigate to purchase screen');
+            }
+        }
+    ];
+
+    // Kasir quick actions with explicit color arrays
+    const kasirActions: ActionItem[] = [
+        {
+            title: 'Transaksi',
+            icon: 'receipt',
+            colors: ['#667eea', '#764ba2'],
+            onPress: () => {
+                // Navigate to transaction screen
+                console.log('Navigate to transaction screen');
+            }
+        },
+        {
+            title: 'Produk',
+            icon: 'inventory',
+            colors: ['#f093fb', '#f5576c'],
+            onPress: () => navigate('/menu/product/dataProduct')
+        },
+        {
+            title: 'Suppliers',
+            icon: 'local-shipping',
+            colors: ['#4facfe', '#00f2fe'],
+            onPress: () => {
+                // Navigate to suppliers screen
+                console.log('Navigate to suppliers screen');
+            }
+        },
+        {
+            title: 'Customer',
+            icon: 'people',
+            colors: ['#43e97b', '#38f9d7'],
+            onPress: () => {
+                // Navigate to customer screen
+                console.log('Navigate to customer screen');
+            }
+        }
+    ];
+
+    const currentActions = isAdmin ? [...adminActions, ...kasirActions] : kasirActions;
+
+    // Add fallback colors in case of undefined
+    const getFallbackColors = (colors: [string, string] | undefined): [string, string] => {
+        return colors || ['#6366F1', '#8B5CF6'];
+    };
+
     return (
         <>
             <Stack.Screen
                 options={{
                     header: () => (
                         <View style={[styles.appBar, { height: height * 0.12, paddingTop: height * 0.04 }]}>
+                            <TouchableOpacity 
+                                style={styles.backButton}
+                                onPress={() => router.back()}
+                            >
+                                <MaterialIcons name="arrow-back" size={width * 0.06} color="#fff" />
+                            </TouchableOpacity>
                             <Text style={styles.appBarText}>User Menu</Text>
+                            <View style={styles.backButton} />
                         </View>
                     ),
                 }}
@@ -127,38 +225,30 @@ const SettingScreen: React.FC = () => {
                             <MaterialIcons name="dashboard" size={width * 0.05} color="#6366F1" />
                             <Text style={styles.cardTitle}>Quick Actions</Text>
                         </View>
-                        
-                        <View style={styles.actionsGrid}>
-                            <TouchableOpacity style={styles.actionItem}>
-                                <LinearGradient
-                                    colors={['#667eea', '#764ba2']}
-                                    style={styles.actionGradient}
-                                >
-                                    <MaterialIcons name="receipt" size={width * 0.06} color="#fff" />
-                                </LinearGradient>
-                                <Text style={styles.actionText}>Transaksi</Text>
-                            </TouchableOpacity>
 
-                            <TouchableOpacity style={styles.actionItem}>
-                                <LinearGradient
-                                    colors={['#f093fb', '#f5576c']}
-                                    style={styles.actionGradient}
-                                >
-                                    <MaterialIcons name="inventory" size={width * 0.06} color="#fff" />
-                                </LinearGradient>
-                                <Text style={styles.actionText}>Produk</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity style={styles.actionItem}>
-                                <LinearGradient
-                                    colors={['#4facfe', '#00f2fe']}
-                                    style={styles.actionGradient}
-                                >
-                                    <MaterialIcons name="analytics" size={width * 0.06} color="#fff" />
-                                </LinearGradient>
-                                <Text style={styles.actionText}>Laporan</Text>
-                            </TouchableOpacity>
-                        </View>
+                        <ScrollView 
+                            horizontal 
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.actionsScrollContainer}
+                        >
+                            <View style={styles.actionsGrid}>
+                                {currentActions.map((action, index) => (
+                                    <TouchableOpacity
+                                        key={index}
+                                        style={styles.actionItem}
+                                        onPress={action.onPress}
+                                    >
+                                        <LinearGradient
+                                            colors={getFallbackColors(action.colors)}
+                                            style={styles.actionGradient}
+                                        >
+                                            <MaterialIcons name={action.icon} size={width * 0.06} color="#fff" />
+                                        </LinearGradient>
+                                        <Text style={styles.actionText}>{action.title}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </ScrollView>
                     </View>
 
                     {/* Menu Items */}
@@ -179,7 +269,7 @@ const SettingScreen: React.FC = () => {
                         </TouchableOpacity>
 
                         {isAdmin && (
-                            <TouchableOpacity style={styles.menuItem}>
+                            <TouchableOpacity style={styles.menuItem} onPress={() => navigate('/menu/admin/manageUser')}>
                                 <View style={styles.menuItemLeft}>
                                     <View style={[styles.menuIcon, { backgroundColor: '#FEF3C7' }]}>
                                         <MaterialIcons name="manage-accounts" size={width * 0.05} color="#F59E0B" />
@@ -193,6 +283,7 @@ const SettingScreen: React.FC = () => {
                             </TouchableOpacity>
                         )}
                     </View>
+                    
                     {/* Logout Button */}
                     <TouchableOpacity
                         style={styles.logoutButton}
@@ -228,10 +319,17 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 10,
         borderTopRightRadius: 10,
     },
-    appBarText: { 
-        color: '#fff', 
-        fontSize: width * 0.05, 
-        fontWeight: 'bold' 
+    backButton: {
+        width: width * 0.1,
+        height: width * 0.1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: width * 0.05,
+    },
+    appBarText: {
+        color: '#fff',
+        fontSize: width * 0.05,
+        fontWeight: 'bold'
     },
     container: {
         flex: 1,
@@ -345,15 +443,16 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#1F2937',
     },
+    actionsScrollContainer: {
+        paddingRight: width * 0.05,
+    },
     actionsGrid: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
+        gap: width * 0.04,
     },
     actionItem: {
         alignItems: 'center',
-        width: '22%',
-        marginBottom: height * 0.02,
+        width: width * 0.25,
     },
     actionGradient: {
         width: width * 0.15,
@@ -368,6 +467,7 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         color: '#6B7280',
         textAlign: 'center',
+        lineHeight: width * 0.035,
     },
     menuContainer: {
         backgroundColor: '#FFFFFF',
@@ -415,47 +515,6 @@ const styles = StyleSheet.create({
         fontSize: width * 0.03,
         color: '#F59E0B',
         fontWeight: '500',
-        marginTop: 2,
-    },
-    activityCard: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: width * 0.04,
-        padding: width * 0.05,
-        marginBottom: height * 0.025,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 3,
-    },
-    activityContent: {
-        gap: height * 0.015,
-    },
-    activityItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: width * 0.03,
-    },
-    activityDot: {
-        width: width * 0.03,
-        height: width * 0.03,
-        borderRadius: width * 0.015,
-        backgroundColor: '#10B981',
-    },
-    activityInfo: {
-        flex: 1,
-    },
-    activityTitle: {
-        fontSize: width * 0.04,
-        fontWeight: '500',
-        color: '#1F2937',
-    },
-    activityTime: {
-        fontSize: width * 0.035,
-        color: '#6B7280',
         marginTop: 2,
     },
     logoutButton: {
