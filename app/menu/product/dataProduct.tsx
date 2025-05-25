@@ -17,6 +17,8 @@ import {
 import { useProductManagement } from "../../../hooks/product/ProductManagement";
 import { useState, useEffect } from "react";
 import { navigate } from "expo-router/build/global-state/routing";
+// Import hook untuk mendapatkan informasi user
+import { useAuth } from "../../../hooks/useAuth"; // Sesuaikan dengan path hook auth Anda
 
 const { width, height } = Dimensions.get('window');
 
@@ -30,14 +32,19 @@ type Product = {
     name: string;
     hargaBeli: number;
     hargaJual: number;
+    satuan: number;
     stock: number;
 };
 
 const DataProductScreen = () => {
         const { products, deleteProduct } = useProductManagement();
+        const { user } = useAuth(); // Ambil informasi user dari hook auth
         const [searchTerm, setSearchTerm] = useState("");
         const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
         const [filteredProducts, setFilteredProducts] = useState<Product[]>(products || []);
+
+        // Cek apakah user adalah admin
+        const isAdmin = user?.role === 'admin';
 
         // Filter produk berdasarkan kata kunci pencarian
         useEffect(() => {
@@ -55,6 +62,16 @@ const DataProductScreen = () => {
         }, [searchTerm, products]);
 
         const handleDeleteProduct = (productId: string, productName: string) => {
+                // Cek role admin sebelum menghapus
+                if (!isAdmin) {
+                        Alert.alert(
+                                "Akses Ditolak",
+                                "Hanya admin yang dapat menghapus produk.",
+                                [{ text: "OK" }]
+                        );
+                        return;
+                }
+
                 Alert.alert(
                         "Hapus Produk",
                         `Apakah Anda yakin ingin menghapus "${productName}"?`,
@@ -76,6 +93,32 @@ const DataProductScreen = () => {
                                 }
                         ]
                 );
+        };
+
+        const handleEditProduct = (productId: string) => {
+                // Cek role admin sebelum edit
+                if (!isAdmin) {
+                        Alert.alert(
+                                "Akses Ditolak",
+                                "Hanya admin yang dapat mengedit produk.",
+                                [{ text: "OK" }]
+                        );
+                        return;
+                }
+                navigate(`/menu/product/editProduct?product_id=${productId}`);
+        };
+
+        const handleCreateProduct = () => {
+                // Cek role admin sebelum membuat produk baru
+                if (!isAdmin) {
+                        Alert.alert(
+                                "Akses Ditolak",
+                                "Hanya admin yang dapat membuat produk baru.",
+                                [{ text: "OK" }]
+                        );
+                        return;
+                }
+                router.push('/menu/product/createProduct');
         };
 
         const toggleProductExpansion = (productId: string) => {
@@ -165,7 +208,7 @@ const DataProductScreen = () => {
                                                         </View>
                                                         <View style={styles.detailItem}>
                                                                 <Text style={styles.detailLabel}>Jumlah Stok</Text>
-                                                                <Text style={styles.detailValue}>{item.stock} unit</Text>
+                                                                <Text style={styles.detailValue}>{item.stock} {item.satuan}</Text>
                                                         </View>
                                                         <View style={styles.detailItem}>
                                                                 <Text style={styles.detailLabel}>Total Nilai</Text>
@@ -175,22 +218,35 @@ const DataProductScreen = () => {
                                                         </View>
                                                 </View>
 
-                                                <View style={styles.actionButtons}>
-                                                        <TouchableOpacity
-                                                                style={[styles.actionButton, styles.editButton]}
-                                                                onPress={() => navigate(`/menu/product/editProduct?product_id=${item.product_id}`)}
-                                                        >
-                                                                <MaterialIcons name="edit" size={18} color="#fff" />
-                                                                <Text style={styles.actionButtonText}>Edit</Text>
-                                                        </TouchableOpacity>
-                                                        <TouchableOpacity
-                                                                style={[styles.actionButton, styles.deleteButton]}
-                                                                onPress={() => handleDeleteProduct(item.product_id, item.name)}
-                                                        >
-                                                                <MaterialIcons name="delete" size={18} color="#fff" />
-                                                                <Text style={styles.actionButtonText}>Hapus</Text>
-                                                        </TouchableOpacity>
-                                                </View>
+                                                {/* Tombol aksi hanya muncul untuk admin */}
+                                                {isAdmin && (
+                                                        <View style={styles.actionButtons}>
+                                                                <TouchableOpacity
+                                                                        style={[styles.actionButton, styles.editButton]}
+                                                                        onPress={() => handleEditProduct(item.product_id)}
+                                                                >
+                                                                        <MaterialIcons name="edit" size={18} color="#fff" />
+                                                                        <Text style={styles.actionButtonText}>Edit</Text>
+                                                                </TouchableOpacity>
+                                                                <TouchableOpacity
+                                                                        style={[styles.actionButton, styles.deleteButton]}
+                                                                        onPress={() => handleDeleteProduct(item.product_id, item.name)}
+                                                                >
+                                                                        <MaterialIcons name="delete" size={18} color="#fff" />
+                                                                        <Text style={styles.actionButtonText}>Hapus</Text>
+                                                                </TouchableOpacity>
+                                                        </View>
+                                                )}
+
+                                                {/* Pesan untuk non-admin */}
+                                                {!isAdmin && (
+                                                        <View style={styles.nonAdminMessage}>
+                                                                <MaterialIcons name="info" size={16} color="#666" />
+                                                                <Text style={styles.nonAdminText}>
+                                                                        Hanya admin yang dapat mengedit atau menghapus produk
+                                                                </Text>
+                                                        </View>
+                                                )}
                                         </View>
                                 )}
                         </View>
@@ -219,7 +275,13 @@ const DataProductScreen = () => {
                                                         >
                                                                 <MaterialIcons name="arrow-back" size={width * 0.06} color="#fff" />
                                                         </TouchableOpacity>
-                                                        <Text style={styles.appBarText}>Manajemen Produk</Text>
+                                                        <View style={styles.headerCenter}>
+                                                                <Text style={styles.appBarText}>Manajemen Produk</Text>
+                                                                {/* Tampilkan role user */}
+                                                                <Text style={styles.roleText}>
+                                                                        {isAdmin ? 'Admin' : 'User'}
+                                                                </Text>
+                                                        </View>
                                                         <View style={styles.backButton} />
                                                 </View>
                                         ),
@@ -263,13 +325,26 @@ const DataProductScreen = () => {
                                         </View>
                                 </View>
 
-                                {/* Tombol Buat Produk */}
+                                {/* Tombol Buat Produk - hanya untuk admin */}
                                 <TouchableOpacity
-                                        style={styles.createButton}
-                                        onPress={() => router.push('/menu/product/createProduct')}
+                                        style={[
+                                                styles.createButton,
+                                                !isAdmin && styles.disabledButton
+                                        ]}
+                                        onPress={handleCreateProduct}
+                                        disabled={!isAdmin}
                                 >
-                                        <MaterialIcons name="add" size={20} color="#fff" />
-                                        <Text style={styles.createButtonText}>Buat Produk Baru</Text>
+                                        <MaterialIcons 
+                                                name="add" 
+                                                size={20} 
+                                                color={isAdmin ? "#fff" : "#999"} 
+                                        />
+                                        <Text style={[
+                                                styles.createButtonText,
+                                                !isAdmin && styles.disabledButtonText
+                                        ]}>
+                                                {isAdmin ? "Buat Produk Baru" : "Hanya Admin yang Dapat Membuat Produk"}
+                                        </Text>
                                 </TouchableOpacity>
 
                                 {/* Daftar Produk */}
@@ -311,10 +386,19 @@ const styles = StyleSheet.create({
                 alignItems: 'center',
                 borderRadius: width * 0.05,
         },
+        headerCenter: {
+                alignItems: 'center',
+        },
         appBarText: {
                 color: '#fff',
                 fontSize: width * 0.05,
                 fontWeight: 'bold'
+        },
+        roleText: {
+                color: '#fff',
+                fontSize: width * 0.03,
+                opacity: 0.8,
+                marginTop: 2,
         },
         searchContainer: {
                 flexDirection: 'row',
@@ -378,11 +462,19 @@ const styles = StyleSheet.create({
                 shadowOpacity: 0.3,
                 shadowRadius: 4,
         },
+        disabledButton: {
+                backgroundColor: '#e0e0e0',
+                elevation: 1,
+                shadowOpacity: 0.1,
+        },
         createButtonText: {
                 color: '#fff',
                 fontWeight: 'bold',
                 fontSize: 16,
                 marginLeft: 8,
+        },
+        disabledButtonText: {
+                color: '#999',
         },
         listContainer: {
                 paddingBottom: 20,
@@ -498,6 +590,22 @@ const styles = StyleSheet.create({
                 color: '#fff',
                 fontWeight: '600',
                 marginLeft: 6,
+        },
+        nonAdminMessage: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                backgroundColor: '#f8f9fa',
+                borderRadius: 8,
+                marginTop: 8,
+        },
+        nonAdminText: {
+                fontSize: 12,
+                color: '#666',
+                marginLeft: 6,
+                textAlign: 'center',
         },
         emptyState: {
                 alignItems: 'center',

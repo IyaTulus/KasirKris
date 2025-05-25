@@ -12,7 +12,8 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View
+    View,
+    Modal
 } from 'react-native';
 import { useProductManagement } from '../../../hooks/product/ProductManagement';
 
@@ -23,8 +24,15 @@ interface FormData {
     name: string;
     hargaBeli: string;
     hargaJual: string;
+    satuan: string;
     stock: string;
 }
+
+const SATUAN_OPTIONS = [
+    { value: 'pcs', label: 'Pcs (Pieces)' },
+    { value: 'kg', label: 'Kg (Kilogram)' },
+    { value: 'unit', label: 'Unit' }
+];
 
 const EditProductScreen: React.FC = () => {
     const { product_id } = useLocalSearchParams();
@@ -37,8 +45,11 @@ const EditProductScreen: React.FC = () => {
         name: '',
         hargaBeli: '',
         hargaJual: '',
+        satuan: 'pcs',
         stock: ''
     });
+
+    const [showSatuanModal, setShowSatuanModal] = useState(false);
 
     useEffect(() => {
         if (productData) {
@@ -47,11 +58,11 @@ const EditProductScreen: React.FC = () => {
                 name: productData.name,
                 hargaBeli: productData.hargaBeli.toString(),
                 hargaJual: productData.hargaJual.toString(),
+                satuan: productData.satuan || 'pcs',
                 stock: productData.stock.toString()
             });
         }
     }, [productData]);
-
 
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [isLoading, setIsLoading] = useState(false);
@@ -119,6 +130,7 @@ const EditProductScreen: React.FC = () => {
                 name: formData.name.trim(),
                 hargaBeli: parseFloat(formData.hargaBeli),
                 hargaJual: parseFloat(formData.hargaJual),
+                satuan: formData.satuan,
                 stock: parseInt(formData.stock)
             };
 
@@ -222,6 +234,7 @@ const EditProductScreen: React.FC = () => {
                     placeholderTextColor="#9CA3AF"
                     value={formData[field]}
                     onChangeText={(value) => updateFormData(field, value)}
+                    onFocus={() => setFocusedField(field)}
                     onBlur={() => setFocusedField('')}
                     keyboardType={keyboardType}
                     autoCapitalize={field === 'name' ? 'words' : 'none'}
@@ -246,6 +259,105 @@ const EditProductScreen: React.FC = () => {
                 </View>
             )}
         </View>
+    );
+
+    const renderSatuanSelect = () => (
+        <View style={styles.inputContainer}>
+            <View style={styles.labelContainer}>
+                <Text style={styles.label}>Satuan</Text>
+            </View>
+
+            <TouchableOpacity
+                style={[
+                    styles.inputWrapper,
+                    focusedField === 'satuan' && styles.inputWrapperFocused,
+                    errors.satuan && styles.inputWrapperError
+                ]}
+                onPress={() => setShowSatuanModal(true)}
+                activeOpacity={0.7}
+            >
+                <View style={styles.iconContainer}>
+                    <MaterialIcons
+                        name="straighten"
+                        size={20}
+                        color={focusedField === 'satuan' ? '#4F46E5' : errors.satuan ? '#EF4444' : '#6B7280'}
+                    />
+                </View>
+
+                <Text style={[
+                    styles.selectText,
+                    !formData.satuan && styles.selectPlaceholder
+                ]}>
+                    {formData.satuan ? SATUAN_OPTIONS.find(opt => opt.value === formData.satuan)?.label : 'Pilih satuan'}
+                </Text>
+
+                <View style={styles.dropdownIcon}>
+                    <MaterialIcons name="keyboard-arrow-down" size={24} color="#6B7280" />
+                </View>
+            </TouchableOpacity>
+
+            {errors.satuan && (
+                <View style={styles.errorContainer}>
+                    <MaterialIcons name="error-outline" size={16} color="#EF4444" />
+                    <Text style={styles.errorText}>{errors.satuan}</Text>
+                </View>
+            )}
+        </View>
+    );
+
+    const renderSatuanModal = () => (
+        <Modal
+            visible={showSatuanModal}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowSatuanModal(false)}
+        >
+            <TouchableOpacity
+                style={styles.modalOverlay}
+                activeOpacity={1}
+                onPress={() => setShowSatuanModal(false)}
+            >
+                <View style={styles.modalContent}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Pilih Satuan</Text>
+                        <TouchableOpacity
+                            onPress={() => setShowSatuanModal(false)}
+                            style={styles.modalCloseButton}
+                        >
+                            <MaterialIcons name="close" size={24} color="#6B7280" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.optionsList}>
+                        {SATUAN_OPTIONS.map((option, index) => (
+                            <TouchableOpacity
+                                key={option.value}
+                                style={[
+                                    styles.optionItem,
+                                    formData.satuan === option.value && styles.optionItemSelected,
+                                    index === SATUAN_OPTIONS.length - 1 && styles.optionItemLast
+                                ]}
+                                onPress={() => {
+                                    updateFormData('satuan', option.value);
+                                    setShowSatuanModal(false);
+                                }}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={[
+                                    styles.optionText,
+                                    formData.satuan === option.value && styles.optionTextSelected
+                                ]}>
+                                    {option.label}
+                                </Text>
+                                {formData.satuan === option.value && (
+                                    <MaterialIcons name="check" size={20} color="#4F46E5" />
+                                )}
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </View>
+            </TouchableOpacity>
+        </Modal>
     );
 
     return (
@@ -280,7 +392,7 @@ const EditProductScreen: React.FC = () => {
                         {/* Bagian Header */}
                         <View style={styles.headerSection}>
                             <View style={styles.iconWrapper}>
-                                <MaterialIcons name="add-shopping-cart" size={32} color="#4F46E5" />
+                                <MaterialIcons name="edit" size={32} color="#4F46E5" />
                             </View>
                             <Text style={styles.title}>Edit Produk</Text>
                             <Text style={styles.subtitle}>
@@ -295,6 +407,8 @@ const EditProductScreen: React.FC = () => {
                             {renderInput('hargaBeli', 'Harga Beli', 'Masukkan harga beli', 'shopping-cart', 'numeric', 'Rp')}
 
                             {renderInput('hargaJual', 'Harga Jual', 'Masukkan harga jual', 'sell', 'numeric', 'Rp')}
+
+                            {renderSatuanSelect()}
 
                             {renderInput('stock', 'Jumlah Stok', 'Masukkan stok awal', 'storage', 'numeric')}
 
@@ -355,6 +469,8 @@ const EditProductScreen: React.FC = () => {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            {renderSatuanModal()}
         </>
     );
 };
@@ -548,6 +664,83 @@ const styles = StyleSheet.create({
         marginLeft: 6,
         fontWeight: '500',
         flex: 1,
+    },
+
+    // Select Styles
+    selectText: {
+        flex: 1,
+        fontSize: 16,
+        color: '#1F2937',
+        fontWeight: '500',
+    },
+    selectPlaceholder: {
+        color: '#9CA3AF',
+    },
+    dropdownIcon: {
+        marginLeft: 8,
+    },
+
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        width: '100%',
+        maxWidth: 350,
+        elevation: 10,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#1F2937',
+    },
+    modalCloseButton: {
+        padding: 4,
+    },
+    optionsList: {
+        paddingVertical: 8,
+    },
+    optionItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+    },
+    optionItemSelected: {
+        backgroundColor: '#EEF2FF',
+    },
+    optionItemLast: {
+        borderBottomWidth: 0,
+    },
+    optionText: {
+        fontSize: 16,
+        color: '#374151',
+        fontWeight: '500',
+    },
+    optionTextSelected: {
+        color: '#4F46E5',
+        fontWeight: '600',
     },
 
     // Profit Analysis Styles
