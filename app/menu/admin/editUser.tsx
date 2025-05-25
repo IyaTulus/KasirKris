@@ -32,14 +32,14 @@ const roleOptions: RoleOption[] = [
         value: 'admin',
         label: 'Administrator',
         icon: 'shield-checkmark',
-        description: 'Full system access and user management',
+        description: 'Akses penuh sistem dan manajemen pengguna',
         color: '#4338CA',
     },
     {
         value: 'kasir',
         label: 'Kasir',
         icon: 'card',
-        description: 'Point of sale and transaction management',
+        description: 'Kasir dan manajemen transaksi',
         color: '#B45309',
     }
 ];
@@ -79,27 +79,27 @@ const EditUserScreen = () => {
         const newErrors: { [key: string]: string } = {};
 
         if (!formData.name.trim()) {
-            newErrors.name = 'Full name is required';
+            newErrors.name = 'Nama lengkap wajib diisi';
         } else if (formData.name.trim().length < 2) {
-            newErrors.name = 'Name must be at least 2 characters';
+            newErrors.name = 'Nama minimal 2 karakter';
         }
 
         if (!formData.username.trim()) {
-            newErrors.username = 'Username is required';
+            newErrors.username = 'Username wajib diisi';
         } else if (formData.username.trim().length < 3) {
-            newErrors.username = 'Username must be at least 3 characters';
+            newErrors.username = 'Username minimal 3 karakter';
         } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-            newErrors.username = 'Username can only contain letters, numbers, and underscores';
+            newErrors.username = 'Username hanya boleh huruf, angka, dan garis bawah';
         }
 
         if (!formData.password) {
-            newErrors.password = 'Password is required';
+            newErrors.password = 'Password wajib diisi';
         } else if (formData.password.length < 6) {
-            newErrors.password = 'Password must be at least 6 characters';
+            newErrors.password = 'Password minimal 6 karakter';
         }
 
         if (!formData.role) {
-            newErrors.role = 'Please select a role';
+            newErrors.role = 'Silakan pilih peran';
         }
 
         setErrors(newErrors);
@@ -113,11 +113,10 @@ const EditUserScreen = () => {
         try {
             await editUser(formData.user_id, formData);
             Alert.alert(
-                'Success',
-                'User update successfully!',
+                'Berhasil',
+                'Pengguna berhasil diperbarui!',
                 [{
                     text: 'OK', onPress: () => {
-                        // Reset form
                         setFormData({user_id: '', name: '', username: '', password: '', role: 'kasir' });
                         setErrors({});
                     }
@@ -126,7 +125,7 @@ const EditUserScreen = () => {
 
             navigate('/menu/admin/manageUser');
         } catch (error) {
-            Alert.alert('Error', 'Failed to update user. Please try again.');
+            Alert.alert('Gagal', 'Gagal memperbarui pengguna. Silakan coba lagi.');
         } finally {
             setIsLoading(false);
         }
@@ -138,7 +137,6 @@ const EditUserScreen = () => {
 
     const updateFormData = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
-        // Clear error when user starts typing
         if (errors[field]) {
             setErrors(prev => ({ ...prev, [field]: '' }));
         }
@@ -184,8 +182,8 @@ const EditUserScreen = () => {
                     header: () => (
                         <View style={styles.appBar}>
                             <View style={styles.appBarContent}>
-                                <Text style={styles.appBarText}>Edit User</Text>
-                                <Text style={styles.appBarSubtext}>Edit a team member</Text>
+                                <Text style={styles.appBarText}>Edit Pengguna</Text>
+                                <Text style={styles.appBarSubtext}>Edit anggota tim</Text>
                             </View>
                         </View>
                     ),
@@ -205,17 +203,17 @@ const EditUserScreen = () => {
                             <View style={styles.formIconContainer}>
                                 <Feather name="edit" size={24} color="#6c5ce7" />
                             </View>
-                            <Text style={styles.formTitle}>User Information</Text>
-                            <Text style={styles.formSubtitle}>Fill in the details below</Text>
+                            <Text style={styles.formTitle}>Informasi Pengguna</Text>
+                            <Text style={styles.formSubtitle}>Isi detail di bawah ini</Text>
                         </View>
 
                         {/* Full Name Input */}
                         <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>Full Name</Text>
+                            <Text style={styles.inputLabel}>Nama Lengkap</Text>
                             <View style={[styles.inputGroup, errors.name && styles.inputError]}>
                                 <MaterialCommunityIcons name="account-outline" size={20} color="#6B7280" />
                                 <TextInput
-                                    placeholder="Enter full name"
+                                    placeholder="Masukkan nama lengkap"
                                     style={styles.input}
                                     placeholderTextColor="#9CA3AF"
                                     value={formData.name}
@@ -232,7 +230,7 @@ const EditUserScreen = () => {
                             <View style={[styles.inputGroup, errors.username && styles.inputError]}>
                                 <MaterialCommunityIcons name="at" size={20} color="#6B7280" />
                                 <TextInput
-                                    placeholder="Enter username"
+                                    placeholder="Masukkan username"
                                     style={styles.input}
                                     placeholderTextColor="#9CA3AF"
                                     value={formData.username}
@@ -250,7 +248,7 @@ const EditUserScreen = () => {
                             <View style={[styles.inputGroup, errors.password && styles.inputError]}>
                                 <MaterialCommunityIcons name="lock-outline" size={20} color="#6B7280" />
                                 <TextInput
-                                    placeholder="Enter password"
+                                    placeholder="Masukkan password"
                                     style={styles.input}
                                     placeholderTextColor="#9CA3AF"
                                     value={formData.password}
@@ -274,7 +272,7 @@ const EditUserScreen = () => {
 
                         {/* Role Selection */}
                         <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>Role</Text>
+                            <Text style={styles.inputLabel}>Peran</Text>
                             <TouchableOpacity
                                 style={[styles.roleSelector, errors.role && styles.inputError]}
                                 onPress={() => setShowRoleSelector(!showRoleSelector)}
@@ -311,7 +309,7 @@ const EditUserScreen = () => {
                                 disabled={isLoading}
                             >
                                 <Feather name="x" size={18} color="#e74c3c" />
-                                <Text style={styles.cancelButtonText}>Cancel</Text>
+                                <Text style={styles.cancelButtonText}>Batal</Text>
                             </TouchableOpacity>
                             
                             <TouchableOpacity
@@ -320,11 +318,11 @@ const EditUserScreen = () => {
                                 disabled={isLoading}
                             >
                                 {isLoading ? (
-                                    <Text style={styles.createButtonText}>Updating...</Text>
+                                    <Text style={styles.createButtonText}>Memperbarui...</Text>
                                 ) : (
                                     <>
                                         <Feather name="edit" size={18} color="#fff" />
-                                        <Text style={styles.createButtonText}>Edit User</Text>
+                                        <Text style={styles.createButtonText}>Edit Pengguna</Text>
                                     </>
                                 )}
                             </TouchableOpacity>

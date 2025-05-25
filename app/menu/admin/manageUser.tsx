@@ -81,11 +81,11 @@ const getAvatarColor = (name: string) => {
   }
 
   const colors = [
-    '#2563EB', // blue
-    '#059669', // emerald
-    '#D97706', // amber
-    '#DC2626', // red
-    '#7C3AED', // violet
+    '#2563EB', // biru
+    '#059669', // hijau
+    '#D97706', // kuning
+    '#DC2626', // merah
+    '#7C3AED', // ungu
     '#DB2777', // pink
     '#14B8A6', // teal
     '#6366F1', // indigo
@@ -100,12 +100,12 @@ const UserManagementScreen = () => {
 
   const handleDelete = (userId: string, username: string) => {
     Alert.alert(
-      'Confirm Deletion',
-      `Are you sure you want to delete user ${username}?`,
+      'Konfirmasi Hapus',
+      `Apakah Anda yakin ingin menghapus pengguna ${username}?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Batal', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Hapus',
           onPress: () => deleteUser(userId),
           style: 'destructive'
         },
@@ -144,14 +144,14 @@ const UserManagementScreen = () => {
           <TouchableOpacity
             onPress={() => navigate(`/menu/admin/editUser?user_id=${item.user_id}`)}
             style={[styles.iconButton, styles.editButton]}
-            accessibilityLabel={`Edit user ${item.name}`}
+            accessibilityLabel={`Edit pengguna ${item.name}`}
           >
             <Feather name="edit-2" size={18} color="#2563EB" />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => handleDelete(item.user_id, item.username)}
             style={[styles.iconButton, styles.deleteButton]}
-            accessibilityLabel={`Delete user ${item.name}`}
+            accessibilityLabel={`Hapus pengguna ${item.name}`}
           >
             <MaterialIcons name="delete-outline" size={20} color="#DC2626" />
           </TouchableOpacity>
@@ -167,7 +167,7 @@ const UserManagementScreen = () => {
           <Ionicons name="people" size={20} color="#6c5ce7" />
         </View>
         <Text style={styles.statNumber}>{users.length}</Text>
-        <Text style={styles.statLabel}>Total Users</Text>
+        <Text style={styles.statLabel}>Total Pengguna</Text>
       </View>
       <View style={styles.statCard}>
         <View style={styles.statIconContainer}>
@@ -176,7 +176,7 @@ const UserManagementScreen = () => {
         <Text style={styles.statNumber}>
           {users.filter(u => u.role === 'admin').length}
         </Text>
-        <Text style={styles.statLabel}>Admins</Text>
+        <Text style={styles.statLabel}>Admin</Text>
       </View>
       <View style={styles.statCard}>
         <View style={styles.statIconContainer}>
@@ -202,7 +202,7 @@ const UserManagementScreen = () => {
               >
                 <MaterialIcons name="arrow-back" size={width * 0.06} color="#fff" />
               </TouchableOpacity>
-              <Text style={styles.appBarText}>User Menu</Text>
+              <Text style={styles.appBarText}>Menu Pengguna</Text>
               <View style={styles.backButton} />
             </View>
           ),
@@ -214,7 +214,7 @@ const UserManagementScreen = () => {
         <View style={styles.searchContainer}>
           <Feather name="search" size={18} color="#6B7280" style={styles.searchIcon} />
           <TextInput
-            placeholder="Search users by name, username, or role..."
+            placeholder="Cari pengguna berdasarkan nama, username, atau peran..."
             placeholderTextColor="#9CA3AF"
             style={styles.searchInput}
             value={searchTerm}
@@ -247,12 +247,12 @@ const UserManagementScreen = () => {
               <Feather name="users" size={48} color="#E5E7EB" />
             </View>
             <Text style={styles.emptyText}>
-              {searchTerm ? 'No users found' : 'No users yet'}
+              {searchTerm ? 'Pengguna tidak ditemukan' : 'Belum ada pengguna'}
             </Text>
             <Text style={styles.emptySubtext}>
               {searchTerm
-                ? 'Try adjusting your search criteria'
-                : 'Add your first team member to get started'
+                ? 'Coba ubah kata kunci pencarian Anda'
+                : 'Tambahkan anggota tim pertama Anda untuk memulai'
               }
             </Text>
             {!searchTerm && (
@@ -260,7 +260,7 @@ const UserManagementScreen = () => {
                 style={styles.emptyActionButton}
                 onPress={() => navigate('/menu/admin/createUser')}
               >
-                <Text style={styles.emptyActionText}>Add User</Text>
+                <Text style={styles.emptyActionText}>Tambah Pengguna</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -269,7 +269,7 @@ const UserManagementScreen = () => {
         <TouchableOpacity
           style={styles.fabButton}
           onPress={() => navigate('/menu/admin/createUser')}
-          accessibilityLabel="Add new user"
+          accessibilityLabel="Tambah pengguna baru"
         >
           <Feather name="user-plus" size={22} color="#fff" />
         </TouchableOpacity>

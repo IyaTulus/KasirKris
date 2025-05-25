@@ -31,14 +31,14 @@ const roleOptions: RoleOption[] = [
     value: 'admin',
     label: 'Administrator',
     icon: 'shield-checkmark',
-    description: 'Full system access and user management',
+    description: 'Akses penuh sistem dan manajemen pengguna',
     color: '#4338CA',
   },
   {
     value: 'kasir',
     label: 'Kasir',
     icon: 'card',
-    description: 'Point of sale and transaction management',
+    description: 'Point of sale dan manajemen transaksi',
     color: '#B45309',
   }
 ];
@@ -47,7 +47,6 @@ const CreateUserScreen = () => {
   const { createUser } = useUserManagement();
 
   const [formData, setFormData] = useState({
-
     name: '',
     username: '',
     password: '',
@@ -63,27 +62,27 @@ const CreateUserScreen = () => {
     const newErrors: {[key: string]: string} = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Full name is required';
+      newErrors.name = 'Nama lengkap wajib diisi';
     } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
+      newErrors.name = 'Nama minimal 2 karakter';
     }
 
     if (!formData.username.trim()) {
-      newErrors.username = 'Username is required';
+      newErrors.username = 'Username wajib diisi';
     } else if (formData.username.trim().length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
+      newErrors.username = 'Username minimal 3 karakter';
     } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      newErrors.username = 'Username can only contain letters, numbers, and underscores';
+      newErrors.username = 'Username hanya boleh huruf, angka, dan garis bawah';
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = 'Password wajib diisi';
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = 'Password minimal 6 karakter';
     }
 
     if (!formData.role) {
-      newErrors.role = 'Please select a role';
+      newErrors.role = 'Silakan pilih peran';
     }
 
     setErrors(newErrors);
@@ -97,16 +96,15 @@ const CreateUserScreen = () => {
     try {
       await createUser(formData);
       Alert.alert(
-        'Success',
-        'User created successfully!',
+        'Berhasil',
+        'Pengguna berhasil dibuat!',
         [{ text: 'OK', onPress: () => {
-          // Reset form
           setFormData({ name: '', username: '', password: '', role: 'kasir' });
           setErrors({});
         }}]
       );
     } catch (error) {
-      Alert.alert('Error', 'Failed to create user. Please try again.');
+      Alert.alert('Gagal', 'Gagal membuat pengguna. Silakan coba lagi.');
     } finally {
       setIsLoading(false);
     }
@@ -114,7 +112,6 @@ const CreateUserScreen = () => {
 
   const updateFormData = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
@@ -160,8 +157,8 @@ const CreateUserScreen = () => {
           header: () => (
             <View style={styles.appBar}>
               <View style={styles.appBarContent}>
-                <Text style={styles.appBarText}>Create New User</Text>
-                <Text style={styles.appBarSubtext}>Add a new team member</Text>
+                <Text style={styles.appBarText}>Buat Pengguna Baru</Text>
+                <Text style={styles.appBarSubtext}>Tambah anggota tim baru</Text>
               </View>
             </View>
           ),
@@ -181,17 +178,17 @@ const CreateUserScreen = () => {
               <View style={styles.formIconContainer}>
                 <Feather name="user-plus" size={24} color="#6c5ce7" />
               </View>
-              <Text style={styles.formTitle}>User Information</Text>
-              <Text style={styles.formSubtitle}>Fill in the details below</Text>
+              <Text style={styles.formTitle}>Informasi Pengguna</Text>
+              <Text style={styles.formSubtitle}>Isi detail di bawah ini</Text>
             </View>
 
             {/* Full Name Input */}
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Full Name</Text>
+              <Text style={styles.inputLabel}>Nama Lengkap</Text>
               <View style={[styles.inputGroup, errors.name && styles.inputError]}>
                 <MaterialCommunityIcons name="account-outline" size={20} color="#6B7280" />
                 <TextInput
-                  placeholder="Enter full name"
+                  placeholder="Masukkan nama lengkap"
                   style={styles.input}
                   placeholderTextColor="#9CA3AF"
                   value={formData.name}
@@ -208,7 +205,7 @@ const CreateUserScreen = () => {
               <View style={[styles.inputGroup, errors.username && styles.inputError]}>
                 <MaterialCommunityIcons name="at" size={20} color="#6B7280" />
                 <TextInput
-                  placeholder="Enter username"
+                  placeholder="Masukkan username"
                   style={styles.input}
                   placeholderTextColor="#9CA3AF"
                   value={formData.username}
@@ -226,7 +223,7 @@ const CreateUserScreen = () => {
               <View style={[styles.inputGroup, errors.password && styles.inputError]}>
                 <MaterialCommunityIcons name="lock-outline" size={20} color="#6B7280" />
                 <TextInput
-                  placeholder="Enter password"
+                  placeholder="Masukkan password"
                   style={styles.input}
                   placeholderTextColor="#9CA3AF"
                   value={formData.password}
@@ -250,7 +247,7 @@ const CreateUserScreen = () => {
 
             {/* Role Selection */}
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Role</Text>
+              <Text style={styles.inputLabel}>Peran</Text>
               <TouchableOpacity
                 style={[styles.roleSelector, errors.role && styles.inputError]}
                 onPress={() => setShowRoleSelector(!showRoleSelector)}
@@ -286,11 +283,11 @@ const CreateUserScreen = () => {
               disabled={isLoading}
             >
               {isLoading ? (
-                <Text style={styles.createButtonText}>Creating...</Text>
+                <Text style={styles.createButtonText}>Membuat...</Text>
               ) : (
                 <>
                   <Feather name="user-plus" size={18} color="#fff" />
-                  <Text style={styles.createButtonText}>Create User</Text>
+                  <Text style={styles.createButtonText}>Buat Pengguna</Text>
                 </>
               )}
             </TouchableOpacity>
