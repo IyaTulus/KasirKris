@@ -20,7 +20,6 @@ import { useProductManagement } from '../../../hooks/product/ProductManagement';
 const { width, height } = Dimensions.get('window');
 
 interface FormData {
-    product_id: string;
     name: string;
     hargaBeli: string;
     hargaJual: string;
