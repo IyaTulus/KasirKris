@@ -1,9 +1,9 @@
 // components/CreatePurchase.tsx
 import React, { useState, useEffect } from 'react';
-import { Alert, Dimensions, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, FlatList, Modal } from 'react-native';
+import { Alert, Dimensions, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal, FlatList } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { getDatabase, ref, onValue, off } from 'firebase/database';
-import { useCallback } from 'react';
+import { useProductManagement } from '../../../hooks/product/ProductManagement';
+import { useSupplierManagement } from '../../../hooks/supplier/SupplierManagement';
 
 interface PurchaseItem {
     productName: string;
@@ -30,18 +30,13 @@ interface Supplier {
 interface CreatePurchaseProps {
     onCreatePurchase: (data: any) => Promise<void>;
     loading: boolean;
-    // Mock data - replace with actual API calls
-    products?: Product[];
-    suppliers?: Supplier[];
 }
 
 const { width } = Dimensions.get('window');
 
 const CreatePurchase: React.FC<CreatePurchaseProps> = ({ 
     onCreatePurchase, 
-    loading,
-    products = [],
-    suppliers = []
+    loading
 }) => {
     const [supplierName, setSupplierName] = useState('');
     const [items, setItems] = useState<PurchaseItem[]>([]);
@@ -55,93 +50,79 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
     const [paidAmount, setPaidAmount] = useState(0);
     const [focusedInput, setFocusedInput] = useState<string | null>(null);
     
-    // Dropdown states
-    const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
-    const [showProductDropdown, setShowProductDropdown] = useState(false);
-    const [filteredSuppliers, setFilteredSuppliers] = useState<Supplier[]>([]);
-    const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+    // Modal states untuk picker
+    const [showSupplierPicker, setShowSupplierPicker] = useState(false);
+    const [showProductPicker, setShowProductPicker] = useState(false);
+    const [supplierSearchQuery, setSupplierSearchQuery] = useState('');
+    const [productSearchQuery, setProductSearchQuery] = useState('');
 
-    // Mock data for demonstration
-    // Ambil data produk dari Firebase Realtime Database
+    // Input text states untuk handling decimal
+    const [priceText, setPriceText] = useState('');
+    const [quantityText, setQuantityText] = useState('');
+    const [hargaBeliText, setHargaBeliText] = useState('');
+    const [hargaJualText, setHargaJualText] = useState('');
+    const [paidAmountText, setPaidAmountText] = useState('');
 
-    const [mockProducts, setMockProducts] = useState<Product[]>([]);
+    // Menggunakan hooks untuk data
+    const { products } = useProductManagement();
+    const { suppliers } = useSupplierManagement();
 
-    useEffect(() => {
-        const db = getDatabase();
-        const productsRef = ref(db, 'tb_product');
-        const handleValue = (snapshot: any) => {
-            const data = snapshot.val();
-            if (data) {
-                const productsArray: Product[] = Object.entries(data).map(([id, value]: [string, any]) => ({
-                    id,
-                    name: value.name,
-                    lastPrice: value.lastPrice,
-                    lastHargaBeli: value.lastHargaBeli,
-                    lastHargaJual: value.lastHargaJual,
-                }));
-                setMockProducts(productsArray);
-            } else {
-                setMockProducts([]);
-            }
-        };
-        onValue(productsRef, handleValue);
-        return () => off(productsRef, 'value', handleValue);
-    }, []);
+    // Filter data berdasarkan search query
+    const filteredSuppliers = suppliers.filter(supplier =>
+        supplier.name.toLowerCase().includes(supplierSearchQuery.toLowerCase())
+    );
 
-    // Ambil data supplier dari Firebase Realtime Database
-    const [mockSuppliers, setMockSuppliers] = useState<Supplier[]>([]);
+    const filteredProducts = products.filter(product =>
+        product.name.toLowerCase().includes(productSearchQuery.toLowerCase())
+    );
 
-    useEffect(() => {
-        const db = getDatabase();
-        const suppliersRef = ref(db, 'tb_suppliers');
-        const handleValue = (snapshot: any) => {
-            const data = snapshot.val();
-            if (data) {
-                const suppliersArray: Supplier[] = Object.entries(data).map(([id, value]: [string, any]) => ({
-                    id,
-                    name: value.name,
-                    lastPurchaseDate: value.lastPurchaseDate,
-                }));
-                setMockSuppliers(suppliersArray);
-            } else {
-                setMockSuppliers([]);
-            }
-        };
-        onValue(suppliersRef, handleValue);
-        return () => off(suppliersRef, 'value', handleValue);
-    }, []);
+    // Helper function untuk validasi dan parsing decimal
+    const parseDecimalInput = (text: string): number => {
+        if (!text || text === '') return 0;
+        
+        // Remove all non-numeric characters except decimal point
+        const cleanText = text.replace(/[^0-9.]/g, '');
+        
+        // Handle multiple decimal points
+        const parts = cleanText.split('.');
+        const formattedText = parts.length > 1 ? 
+            parts[0] + '.' + parts.slice(1).join('') : 
+            cleanText;
+        
+        const numValue = parseFloat(formattedText);
+        return isNaN(numValue) ? 0 : numValue;
+    };
 
-    useEffect(() => {
-        // Filter suppliers based on input
-        if (supplierName.trim() === '') {
-            setFilteredSuppliers([]);
-            setShowSupplierDropdown(false);
-        } else {
-            const filtered = mockSuppliers.filter(supplier =>
-                supplier.name.toLowerCase().includes(supplierName.toLowerCase())
-            );
-            setFilteredSuppliers(filtered);
-            setShowSupplierDropdown(filtered.length > 0);
+    // Helper function untuk format input text
+    const formatInputText = (text: string): string => {
+        if (!text || text === '') return '';
+        
+        // Remove all non-numeric characters except decimal point
+        let cleanText = text.replace(/[^0-9.]/g, '');
+        
+        // Handle case where user types decimal point first
+        if (cleanText.startsWith('.')) {
+            cleanText = '0' + cleanText;
         }
-    }, [supplierName]);
-
-    useEffect(() => {
-        // Filter products based on input
-        if (currentItem.productName.trim() === '') {
-            setFilteredProducts([]);
-            setShowProductDropdown(false);
-        } else {
-            const filtered = mockProducts.filter(product =>
-                product.name.toLowerCase().includes(currentItem.productName.toLowerCase())
-            );
-            setFilteredProducts(filtered);
-            setShowProductDropdown(filtered.length > 0);
+        
+        // Ensure only one decimal point
+        const parts = cleanText.split('.');
+        if (parts.length > 2) {
+            cleanText = parts[0] + '.' + parts.slice(1).join('');
         }
-    }, [currentItem.productName]);
+        
+        // Limit decimal places to 2
+        if (parts.length === 2 && parts[1].length > 2) {
+            cleanText = parts[0] + '.' + parts[1].substring(0, 2);
+        }
+        
+        return cleanText;
+    };
 
     const selectSupplier = (supplier: Supplier) => {
         setSupplierName(supplier.name);
-        setShowSupplierDropdown(false);
+        setShowSupplierPicker(false);
+        setSupplierSearchQuery('');
     };
 
     const selectProduct = (product: Product) => {
@@ -152,7 +133,14 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
             hargaBeli: product.lastHargaBeli || 0,
             hargaJual: product.lastHargaJual || 0,
         });
-        setShowProductDropdown(false);
+        
+        // Update text states
+        setPriceText(product.lastPrice ? product.lastPrice.toString() : '');
+        setHargaBeliText(product.lastHargaBeli ? product.lastHargaBeli.toString() : '');
+        setHargaJualText(product.lastHargaJual ? product.lastHargaJual.toString() : '');
+        
+        setShowProductPicker(false);
+        setProductSearchQuery('');
     };
 
     const addItem = () => {
@@ -165,6 +153,13 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
                 hargaBeli: 0,
                 hargaJual: 0
             });
+            
+            // Reset text states
+            setPriceText('');
+            setQuantityText('');
+            setHargaBeliText('');
+            setHargaJualText('');
+            
         } else {
             Alert.alert('Error', 'Mohon isi semua kolom yang diperlukan (Nama Produk, Harga, dan Jumlah)');
         }
@@ -224,6 +219,13 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
                 hargaJual: 0
             });
 
+            // Reset text states
+            setPriceText('');
+            setQuantityText('');
+            setHargaBeliText('');
+            setHargaJualText('');
+            setPaidAmountText('');
+
         } catch (error) {
             console.error('Error creating purchase:', error);
         }
@@ -231,14 +233,12 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
 
     const renderInput = (
         placeholder: string, 
-        value: string | number, 
+        value: string, 
         onChangeText: (text: string) => void, 
         keyboardType: 'default' | 'numeric' | 'decimal-pad' = 'default', 
         inputKey: string,
         description?: string,
-        required?: boolean,
-        showDropdown?: boolean,
-        onFocus?: () => void
+        required?: boolean
     ) => (
         <View style={styles.inputGroup}>
             <View style={styles.inputLabelContainer}>
@@ -250,54 +250,150 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
             </View>
             <TextInput
                 placeholder={placeholder}
-                value={value.toString()}
+                value={value}
                 onChangeText={onChangeText}
                 keyboardType={keyboardType}
                 style={[styles.input, focusedInput === inputKey && styles.inputFocused]}
-                onFocus={() => {
-                    setFocusedInput(inputKey);
-                    onFocus?.();
-                }}
+                onFocus={() => setFocusedInput(inputKey)}
                 onBlur={() => setFocusedInput(null)}
             />
-            {showDropdown && (
-                <View style={styles.dropdown}>
+        </View>
+    );
+
+    // Modal untuk memilih supplier
+    const renderSupplierPickerModal = () => (
+        <Modal
+            visible={showSupplierPicker}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => setShowSupplierPicker(false)}
+        >
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Pilih Supplier</Text>
+                        <TouchableOpacity onPress={() => setShowSupplierPicker(false)}>
+                            <MaterialIcons name="close" size={24} color="#636e72" />
+                        </TouchableOpacity>
+                    </View>
+                    
+                    <View style={styles.searchContainer}>
+                        <MaterialIcons name="search" size={20} color="#636e72" style={styles.searchIcon} />
+                        <TextInput
+                            placeholder="Cari supplier..."
+                            value={supplierSearchQuery}
+                            onChangeText={setSupplierSearchQuery}
+                            style={styles.searchInput}
+                            autoFocus={true}
+                        />
+                    </View>
+
                     <FlatList
-                        data={inputKey === 'supplier' ? filteredSuppliers : filteredProducts}
+                        data={filteredSuppliers}
                         keyExtractor={(item) => item.id}
+                        style={styles.modalList}
+                        showsVerticalScrollIndicator={false}
                         renderItem={({ item }) => (
                             <TouchableOpacity
-                                style={styles.dropdownItem}
-                                onPress={() => {
-                                    if (inputKey === 'supplier') {
-                                        selectSupplier(item as Supplier);
-                                    } else {
-                                        selectProduct(item as Product);
-                                    }
-                                }}
+                                style={styles.modalItem}
+                                onPress={() => selectSupplier(item)}
                             >
-                                <View style={styles.dropdownItemContent}>
-                                    <Text style={styles.dropdownItemText}>{item.name}</Text>
-                                    {inputKey === 'supplier' && (item as Supplier).lastPurchaseDate && (
-                                        <Text style={styles.dropdownItemSubtext}>
-                                            Terakhir: {new Date((item as Supplier).lastPurchaseDate!).toLocaleDateString('id-ID')}
-                                        </Text>
-                                    )}
-                                    {inputKey === 'productName' && (item as Product).lastPrice && (
-                                        <Text style={styles.dropdownItemSubtext}>
-                                            Harga terakhir: {formatCurrency((item as Product).lastPrice!)}
+                                <View style={styles.modalItemContent}>
+                                    <Text style={styles.modalItemText}>{item.name}</Text>
+                                    {item.lastPurchaseDate && (
+                                        <Text style={styles.modalItemSubtext}>
+                                            Terakhir: {new Date(item.lastPurchaseDate).toLocaleDateString('id-ID')}
                                         </Text>
                                     )}
                                 </View>
                                 <MaterialIcons name="chevron-right" size={20} color="#636e72" />
                             </TouchableOpacity>
                         )}
-                        style={styles.dropdownList}
-                        keyboardShouldPersistTaps="handled"
+                        ListEmptyComponent={() => (
+                            <View style={styles.emptyContainer}>
+                                <MaterialIcons name="business" size={48} color="#ddd" />
+                                <Text style={styles.emptyText}>
+                                    {supplierSearchQuery ? 'Supplier tidak ditemukan' : 'Belum ada supplier'}
+                                </Text>
+                                {supplierSearchQuery && (
+                                    <Text style={styles.emptySubtext}>
+                                        Coba kata kunci lain atau tambah supplier baru
+                                    </Text>
+                                )}
+                            </View>
+                        )}
                     />
                 </View>
-            )}
-        </View>
+            </View>
+        </Modal>
+    );
+
+    // Modal untuk memilih produk
+    const renderProductPickerModal = () => (
+        <Modal
+            visible={showProductPicker}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => setShowProductPicker(false)}
+        >
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Pilih Produk</Text>
+                        <TouchableOpacity onPress={() => setShowProductPicker(false)}>
+                            <MaterialIcons name="close" size={24} color="#636e72" />
+                        </TouchableOpacity>
+                    </View>
+                    
+                    <View style={styles.searchContainer}>
+                        <MaterialIcons name="search" size={20} color="#636e72" style={styles.searchIcon} />
+                        <TextInput
+                            placeholder="Cari produk..."
+                            value={productSearchQuery}
+                            onChangeText={setProductSearchQuery}
+                            style={styles.searchInput}
+                            autoFocus={true}
+                        />
+                    </View>
+
+                    <FlatList
+                        data={filteredProducts}
+                        keyExtractor={(item) => item.id}
+                        style={styles.modalList}
+                        showsVerticalScrollIndicator={false}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                style={styles.modalItem}
+                                onPress={() => selectProduct(item)}
+                            >
+                                <View style={styles.modalItemContent}>
+                                    <Text style={styles.modalItemText}>{item.name}</Text>
+                                    {item.lastPrice && (
+                                        <Text style={styles.modalItemSubtext}>
+                                            Harga terakhir: {formatCurrency(item.lastPrice)}
+                                        </Text>
+                                    )}
+                                </View>
+                                <MaterialIcons name="chevron-right" size={20} color="#636e72" />
+                            </TouchableOpacity>
+                        )}
+                        ListEmptyComponent={() => (
+                            <View style={styles.emptyContainer}>
+                                <MaterialIcons name="inventory" size={48} color="#ddd" />
+                                <Text style={styles.emptyText}>
+                                    {productSearchQuery ? 'Produk tidak ditemukan' : 'Belum ada produk'}
+                                </Text>
+                                {productSearchQuery && (
+                                    <Text style={styles.emptySubtext}>
+                                        Coba kata kunci lain atau tambah produk baru
+                                    </Text>
+                                )}
+                            </View>
+                        )}
+                    />
+                </View>
+            </View>
+        </Modal>
     );
 
     return (
@@ -320,19 +416,34 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
                         <MaterialIcons name="business" size={18} color="#6c5ce7" /> Informasi Supplier
                     </Text>
                     <Text style={styles.formSectionDescription}>
-                        Masukkan atau pilih supplier dari daftar yang tersedia
+                        Pilih supplier dari daftar atau masukkan nama supplier baru
                     </Text>
                     
-                    {renderInput(
-                        'Nama Supplier', 
-                        supplierName, 
-                        setSupplierName, 
-                        'default', 
-                        'supplier',
-                        'Ketik nama supplier untuk melihat saran',
-                        true,
-                        showSupplierDropdown
-                    )}
+                    <View style={styles.inputGroup}>
+                        <View style={styles.inputLabelContainer}>
+                            <Text style={styles.inputLabel}>
+                                Nama Supplier
+                                <Text style={styles.requiredMark}> *</Text>
+                            </Text>
+                            <Text style={styles.inputDescription}>Ketik nama atau pilih dari daftar</Text>
+                        </View>
+                        <View style={styles.inputWithButton}>
+                            <TextInput
+                                placeholder="Nama Supplier"
+                                value={supplierName}
+                                onChangeText={setSupplierName}
+                                style={[styles.inputFlex, focusedInput === 'supplier' && styles.inputFocused]}
+                                onFocus={() => setFocusedInput('supplier')}
+                                onBlur={() => setFocusedInput(null)}
+                            />
+                            <TouchableOpacity 
+                                style={styles.pickerButton}
+                                onPress={() => setShowSupplierPicker(true)}
+                            >
+                                <MaterialIcons name="arrow-drop-down" size={24} color="#6c5ce7" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                 </View>
 
                 {/* Add Items Section */}
@@ -344,46 +455,71 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
                         Tambahkan produk dan detailnya ke pembelian ini
                     </Text>
 
-                    {renderInput(
-                        'Nama Produk', 
-                        currentItem.productName, 
-                        (text) => setCurrentItem({ ...currentItem, productName: text }), 
-                        'default', 
-                        'productName',
-                        'Ketik nama produk untuk melihat saran atau masukkan produk baru',
-                        true,
-                        showProductDropdown
-                    )}
+                    <View style={styles.inputGroup}>
+                        <View style={styles.inputLabelContainer}>
+                            <Text style={styles.inputLabel}>
+                                Nama Produk
+                                <Text style={styles.requiredMark}> *</Text>
+                            </Text>
+                            <Text style={styles.inputDescription}>Ketik nama atau pilih dari daftar produk</Text>
+                        </View>
+                        <View style={styles.inputWithButton}>
+                            <TextInput
+                                placeholder="Nama Produk"
+                                value={currentItem.productName}
+                                onChangeText={(text) => setCurrentItem({ ...currentItem, productName: text })}
+                                style={[styles.inputFlex, focusedInput === 'productName' && styles.inputFocused]}
+                                onFocus={() => setFocusedInput('productName')}
+                                onBlur={() => setFocusedInput(null)}
+                            />
+                            <TouchableOpacity 
+                                style={styles.pickerButton}
+                                onPress={() => setShowProductPicker(true)}
+                            >
+                                <MaterialIcons name="arrow-drop-down" size={24} color="#6c5ce7" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
 
                     <View style={styles.rowInputs}>
                         <View style={styles.halfInput}>
                             {renderInput(
                                 'Harga', 
-                                currentItem.price, 
-                                (text) => setCurrentItem({ ...currentItem, price: parseFloat(text) || 0 }), 
-                                'numeric', 
+                                priceText, 
+                                (text) => {
+                                    const formattedText = formatInputText(text);
+                                    setPriceText(formattedText);
+                                    setCurrentItem({ ...currentItem, price: parseDecimalInput(formattedText) });
+                                }, 
+                                'decimal-pad', 
                                 'price',
                                 'Harga per satuan',
                                 true
                             )}
                         </View>
                         <View style={styles.halfInput}>
-                            {renderInput(
-                                'Jumlah', 
-                                currentItem.quantity, 
-                                (text) => {
-                                    // Allow decimal input for quantity
-                                    const numValue = parseFloat(text);
-                                    setCurrentItem({ 
-                                        ...currentItem, 
-                                        quantity: isNaN(numValue) ? 0 : numValue 
-                                    });
-                                }, 
-                                'decimal-pad', 
-                                'quantity',
-                                'Jumlah barang',
-                                true
-                            )}
+                            <View style={styles.inputGroup}>
+                                <View style={styles.inputLabelContainer}>
+                                    <Text style={styles.inputLabel}>
+                                        Jumlah
+                                        <Text style={styles.requiredMark}> *</Text>
+                                    </Text>
+                                    <Text style={styles.inputDescription}>Jumlah barang</Text>
+                                </View>
+                                <TextInput
+                                    placeholder="Jumlah"
+                                    value={quantityText}
+                                    onChangeText={(text) => {
+                                        const formattedText = formatInputText(text);
+                                        setQuantityText(formattedText);
+                                        setCurrentItem({ ...currentItem, quantity: parseDecimalInput(formattedText) });
+                                    }}
+                                    keyboardType="decimal-pad"
+                                    style={[styles.input, focusedInput === 'quantity' && styles.inputFocused]}
+                                    onFocus={() => setFocusedInput('quantity')}
+                                    onBlur={() => setFocusedInput(null)}
+                                />
+                            </View>
                         </View>
                     </View>
 
@@ -391,9 +527,13 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
                         <View style={styles.halfInput}>
                             {renderInput(
                                 'Harga Beli', 
-                                currentItem.hargaBeli, 
-                                (text) => setCurrentItem({ ...currentItem, hargaBeli: parseFloat(text) || 0 }), 
-                                'numeric', 
+                                hargaBeliText, 
+                                (text) => {
+                                    const formattedText = formatInputText(text);
+                                    setHargaBeliText(formattedText);
+                                    setCurrentItem({ ...currentItem, hargaBeli: parseDecimalInput(formattedText) });
+                                }, 
+                                'decimal-pad', 
                                 'hargaBeli',
                                 'Harga beli dari supplier'
                             )}
@@ -401,9 +541,13 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
                         <View style={styles.halfInput}>
                             {renderInput(
                                 'Harga Jual', 
-                                currentItem.hargaJual, 
-                                (text) => setCurrentItem({ ...currentItem, hargaJual: parseFloat(text) || 0 }), 
-                                'numeric', 
+                                hargaJualText, 
+                                (text) => {
+                                    const formattedText = formatInputText(text);
+                                    setHargaJualText(formattedText);
+                                    setCurrentItem({ ...currentItem, hargaJual: parseDecimalInput(formattedText) });
+                                }, 
+                                'decimal-pad', 
                                 'hargaJual',
                                 'Rencana harga jual'
                             )}
@@ -470,9 +614,13 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
                     
                     {renderInput(
                         'Jumlah Dibayar', 
-                        paidAmount, 
-                        (text) => setPaidAmount(parseFloat(text) || 0), 
-                        'numeric', 
+                        paidAmountText, 
+                        (text) => {
+                            const formattedText = formatInputText(text);
+                            setPaidAmountText(formattedText);
+                            setPaidAmount(parseDecimalInput(formattedText));
+                        }, 
+                        'decimal-pad', 
                         'paidAmount',
                         'Jumlah yang dibayar sekarang (isi 0 jika hutang penuh)'
                     )}
@@ -519,6 +667,10 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
                     </Text>
                 </TouchableOpacity>
             </View>
+
+            {/* Modals */}
+            {renderSupplierPickerModal()}
+            {renderProductPickerModal()}
         </ScrollView>
     );
 };
@@ -619,83 +771,76 @@ const styles = StyleSheet.create({
         borderColor: '#6c5ce7',
         borderWidth: 2,
     },
-    dropdown: {
-        position: 'absolute',
-        top: '100%',
-        left: 0,
-        right: 0,
-        backgroundColor: 'white',
-        borderRadius: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 8,
-        zIndex: 1000,
-        maxHeight: 200,
-    },
-    dropdownList: {
-        borderRadius: 12,
-    },
-    dropdownItem: {
+    inputWithButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+    },
+    inputFlex: {
+        backgroundColor: '#f8f9ff',
+        borderWidth: 1,
+        borderColor: '#e6e7ff',
+        borderTopLeftRadius: 12,
+        borderBottomLeftRadius: 12,
+        borderRightWidth: 0,
         padding: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
-    },
-    dropdownItemContent: {
-        flex: 1,
-    },
-    dropdownItemText: {
         fontSize: 16,
         color: '#2d3436',
-        fontWeight: '500',
+        flex: 1,
+        height: 50,
     },
-    dropdownItemSubtext: {
-        fontSize: 12,
-        color: '#636e72',
-        marginTop: 2,
+    pickerButton: {
+        backgroundColor: '#f8f9ff',
+        borderWidth: 1,
+        borderColor: '#e6e7ff',
+        borderTopRightRadius: 12,
+        borderBottomRightRadius: 12,
+        paddingHorizontal: 15,
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: 50,
     },
     rowInputs: {
         flexDirection: 'row',
-        gap: 10,
+        justifyContent: 'space-between',
+        marginBottom: 15,
     },
     halfInput: {
         flex: 1,
+        marginRight: 10,
+        position: 'relative',
+    },
+    halfInputLast: {
+        flex: 1,
+        position: 'relative',
     },
     addItemButton: {
-        backgroundColor: '#74b9ff',
-        paddingVertical: 15,
-        paddingHorizontal: 20,
-        borderRadius: 12,
         flexDirection: 'row',
-        justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: '#6c5ce7',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 8,
         marginTop: 10,
     },
     addItemButtonText: {
         color: 'white',
-        fontWeight: '600',
         fontSize: 16,
-        marginLeft: 8,
+        marginLeft: 10,
     },
     itemsList: {
         backgroundColor: '#f8f9ff',
         borderRadius: 12,
         padding: 15,
+        marginTop: 10,
     },
     itemCard: {
         backgroundColor: 'white',
-        borderRadius: 10,
+        borderRadius: 12,
         padding: 15,
-        marginBottom: 12,
-        borderLeftWidth: 4,
-        borderLeftColor: '#6c5ce7',
+        marginBottom: 10,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
+        shadowOpacity: 0.1,
         shadowRadius: 2,
         elevation: 2,
     },
@@ -709,36 +854,36 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         color: '#2d3436',
-        flex: 1,
     },
     removeButton: {
-        padding: 4,
-        borderRadius: 12,
-        backgroundColor: '#ffeaa7',
+        padding: 5,
+        borderRadius: 50,
+        backgroundColor: '#ffe6e6',
     },
     itemDetails: {
-        gap: 4,
+        marginLeft: 10,
     },
     itemDetailText: {
         fontSize: 14,
         color: '#636e72',
-    },
-    totalContainer: {
-        backgroundColor: 'rgba(108, 92, 231, 0.1)',
-        borderRadius: 10,
-        padding: 15,
-        marginTop: 8,
-        alignItems: 'center',
-    },
-    totalLabel: {
-        fontSize: 14,
-        color: '#636e72',
         marginBottom: 4,
     },
-    totalAmount: {
-        fontSize: 20,
+    totalContainer: {
+        marginTop: 10,
+        paddingVertical: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#e6e7ff',
+    },
+    totalLabel: {
+        fontSize: 16,
         fontWeight: 'bold',
-        color: '#6c5ce7',
+        color: '#2d3436',
+    },
+    totalAmount: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#2d3436',
+        marginTop: 4,
     },
     paymentSummary: {
         backgroundColor: '#f8f9ff',
@@ -751,57 +896,136 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginBottom: 8,
     },
-    paymentRowHighlight: {
-        paddingTop: 12,
-        borderTopWidth: 1,
-        borderTopColor: '#e6e7ff',
-        marginTop: 4,
-    },
     paymentLabel: {
         fontSize: 14,
         color: '#636e72',
     },
     paymentValue: {
-        fontSize: 14,
+        fontSize: 16,
         color: '#2d3436',
-        fontWeight: '500',
+    },
+    paymentRowHighlight: {
+        borderTopWidth: 1,
+        borderTopColor: '#e6e7ff',
+        paddingTop: 8,
     },
     paymentLabelBold: {
         fontSize: 16,
-        color: '#2d3436',
         fontWeight: 'bold',
+        color: '#2d3436',
     },
     paymentValueBold: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: 'bold',
     },
     createButton: {
         backgroundColor: '#6c5ce7',
-        paddingVertical: 18,
-        borderRadius: 12,
-        flexDirection: 'row',
-        justifyContent: 'center',
+        paddingVertical: 15,
+        borderRadius: 8,
         alignItems: 'center',
-        shadowColor: '#6c5ce7',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 6,
-        marginTop: 10,
+        marginTop: 20,
     },
     createButtonDisabled: {
-        backgroundColor: '#a8a8a8',
-        shadowOpacity: 0,
-        elevation: 0,
+        backgroundColor: '#dfe6e9',
     },
     createButtonText: {
         color: 'white',
-        fontWeight: 'bold',
         fontSize: 16,
-        marginLeft: 8,
+        fontWeight: 'bold',
     },
     buttonIcon: {
-        marginRight: -8,
+        marginRight: 10,
+    },
+
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        width: '90%',
+        backgroundColor: 'white',
+        borderRadius: 12,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#2d3436',
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8f9ff',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        marginBottom: 15,
+    },
+    searchIcon: {
+        marginRight: 10,
+    },
+    searchInput: {
+        flex: 1,
+        height: 40,
+        fontSize: 16,
+        color: '#2d3436',
+    },
+    modalList: {
+        maxHeight: '60%',
+    },
+    modalItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e6e7ff',
+    },
+    modalItemContent: {
+        flex: 1,
+        marginRight: 10,
+    },
+    modalItemText: {
+        fontSize: 16,
+        color: '#2d3436',
+    },
+    modalItemSubtext: {
+        fontSize: 14,
+        color: '#636e72',
+        marginTop: 4,
+    },
+    modalItemTextBold: {
+        fontWeight: 'bold',
+        color: '#2d3436',
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    emptyText: {
+        fontSize: 16,
+        color: '#636e72',
+        marginTop: 10,
+    },
+    emptySubtext: {
+        fontSize: 14,
+        color: '#b2bec3',
+        textAlign: 'center',
+        marginTop: 5,
     },
 });
 
