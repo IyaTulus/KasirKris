@@ -119,7 +119,7 @@ const SettingScreen: React.FC = () => {
             colors: ['#fa709a', '#fee140'],
             onPress: () => {
                 // Navigate to purchase screen
-                console.log('Navigate to purchase screen');
+                navigate('/menu/purchases/mainPurchase');
             }
         }
     ];

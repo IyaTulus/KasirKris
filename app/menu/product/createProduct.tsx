@@ -46,7 +46,9 @@ const CreateProduct: React.FC = () => {
     const satuanOptions = [
         { value: 'pcs', label: 'Pcs (Pieces)' },
         { value: 'Kg', label: 'Kg (Kilogram)' },
-        { value: 'Unit', label: 'Unit' }
+        { value: 'Unit', label: 'Unit' },
+        { value: 'Liter', label: 'Liter' },
+        { value: 'Box', label: 'Box' }
     ];
 
     // Fungsi validasi
@@ -67,11 +69,15 @@ const CreateProduct: React.FC = () => {
 
     const validateStock = (stock: string): string => {
         if (!stock.trim()) return 'Stok wajib diisi';
-        const numStock = parseInt(stock);
+        const numStock = parseFloat(stock);
         if (isNaN(numStock)) return 'Stok harus berupa angka yang valid';
         if (numStock < 0) return 'Stok tidak boleh negatif';
         if (numStock > 999999) return 'Stok terlalu besar';
-        if (!Number.isInteger(parseFloat(stock))) return 'Stok harus berupa angka bulat';
+
+        // Validasi untuk maksimal 3 digit desimal
+        const decimalPlaces = (stock.split('.')[1] || '').length;
+        if (decimalPlaces > 3) return 'Stok maksimal 3 digit desimal';
+
         return '';
     };
 
@@ -118,7 +124,7 @@ const CreateProduct: React.FC = () => {
                 hargaBeli: parseFloat(formData.hargaBeli),
                 hargaJual: parseFloat(formData.hargaJual),
                 satuan: formData.satuan,
-                stock: parseInt(formData.stock)
+                stock: parseFloat(formData.stock) // Menggunakan parseFloat untuk mendukung desimal
             };
 
             await createProduct(productData);
@@ -148,9 +154,13 @@ const CreateProduct: React.FC = () => {
     const updateFormData = (field: keyof FormData, value: string) => {
         // Untuk field numerik, hanya izinkan input angka yang valid
         if (['hargaBeli', 'hargaJual', 'stock'].includes(field)) {
+            // Untuk stok, izinkan angka desimal dengan maksimal 3 digit desimal
             if (field === 'stock') {
-                if (value !== '' && !/^\d*$/.test(value)) return;
+                if (value !== '' && !/^\d*\.?\d{0,3}$/.test(value)) return;
+                // Pastikan tidak ada double decimal point
+                if (value.split('.').length > 2) return;
             } else {
+                // Untuk harga, izinkan angka desimal
                 if (value !== '' && !/^\d*\.?\d*$/.test(value)) return;
                 if (value.split('.').length > 2) return;
             }
@@ -169,6 +179,17 @@ const CreateProduct: React.FC = () => {
         const num = parseFloat(amount);
         if (isNaN(num)) return amount;
         return new Intl.NumberFormat('id-ID').format(num);
+    };
+
+    const formatStock = (stock: string): string => {
+        if (!stock) return '';
+        const num = parseFloat(stock);
+        if (isNaN(num)) return stock;
+        // Format dengan maksimal 3 desimal, hilangkan trailing zeros
+        return num.toLocaleString('id-ID', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 3
+        });
     };
 
     const calculateProfit = (): { profit: number; margin: string } => {
@@ -213,8 +234,8 @@ const CreateProduct: React.FC = () => {
                     styles.selectText,
                     !formData.satuan && styles.selectPlaceholder
                 ]}>
-                    {formData.satuan 
-                        ? satuanOptions.find(opt => opt.value === formData.satuan)?.label 
+                    {formData.satuan
+                        ? satuanOptions.find(opt => opt.value === formData.satuan)?.label
                         : 'Pilih satuan produk'
                     }
                 </Text>
@@ -282,7 +303,7 @@ const CreateProduct: React.FC = () => {
                                             {option.value}
                                         </Text>
                                     </View>
-                                    
+
                                     {formData.satuan === option.value && (
                                         <MaterialIcons
                                             name="check-circle"
@@ -358,6 +379,16 @@ const CreateProduct: React.FC = () => {
                 </View>
             )}
 
+            {/* Tampilkan format stok di bawah input saat tidak fokus */}
+            {field === 'stock' && formData[field] && focusedField !== field && (
+                <View style={styles.formattedValueContainer}>
+                    <Text style={styles.formattedValueLabel}>Format: </Text>
+                    <Text style={styles.formattedValue}>
+                        {formatStock(formData[field])} {formData.satuan}
+                    </Text>
+                </View>
+            )}
+
             {errors[field] && (
                 <View style={styles.errorContainer}>
                     <MaterialIcons name="error-outline" size={16} color="#EF4444" />
@@ -417,7 +448,18 @@ const CreateProduct: React.FC = () => {
 
                             {renderSatuanSelect()}
 
-                            {renderInput('stock', 'Jumlah Stok*', 'Masukkan stok awal', 'storage', 'numeric')}
+                            {renderInput('stock', 'Jumlah Stok*', 'Masukkan stok awal (dapat desimal)', 'storage', 'numeric')}
+
+                            {/* Stock Info Card */}
+                            <View style={styles.infoCard}>
+                                <View style={styles.infoHeader}>
+                                    <MaterialIcons name="info-outline" size={18} color="#3B82F6" />
+                                    <Text style={styles.infoTitle}>Info Stok</Text>
+                                </View>
+                                <Text style={styles.infoText}>
+                                    Stok dapat berupa angka desimal dengan maksimal 3 digit desimal (contoh: 12.5, 10.75, 8.125)
+                                </Text>
+                            </View>
 
                             {/* Profit Analysis Card */}
                             {formData.hargaBeli && formData.hargaJual && (
@@ -482,6 +524,7 @@ const CreateProduct: React.FC = () => {
     );
 };
 
+
 const styles = StyleSheet.create({
     keyboardView: {
         flex: 1,
@@ -532,6 +575,31 @@ const styles = StyleSheet.create({
     },
 
     // Header Section
+    infoCard: {
+        backgroundColor: '#EBF8FF',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 24,
+        borderWidth: 1,
+        borderColor: '#BFDBFE',
+    },
+    infoHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    infoTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#1E40AF',
+        marginLeft: 6,
+    },
+    infoText: {
+        fontSize: 13,
+        color: '#1E40AF',
+        lineHeight: 18,
+    },
+
     headerSection: {
         alignItems: 'center',
         paddingVertical: 32,
