@@ -48,6 +48,7 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
         hargaJual: 0
     });
     const [paidAmount, setPaidAmount] = useState(0);
+    const [transactionDate, setTransactionDate] = useState(new Date());
     const [focusedInput, setFocusedInput] = useState<string | null>(null);
     
     // Modal states untuk picker
@@ -62,10 +63,18 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
     const [hargaBeliText, setHargaBeliText] = useState('');
     const [hargaJualText, setHargaJualText] = useState('');
     const [paidAmountText, setPaidAmountText] = useState('');
+    const [transactionDateText, setTransactionDateText] = useState('');
 
     // Menggunakan hooks untuk data
     const { products } = useProductManagement();
     const { suppliers } = useSupplierManagement();
+
+    // Initialize transaction date text on component mount
+    useEffect(() => {
+        const today = new Date();
+        const formattedDate = formatDateForInput(today);
+        setTransactionDateText(formattedDate);
+    }, []);
 
     // Filter data berdasarkan search query
     const filteredSuppliers = suppliers.filter(supplier =>
@@ -75,6 +84,64 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
     const filteredProducts = products.filter(product =>
         product.name.toLowerCase().includes(productSearchQuery.toLowerCase())
     );
+
+    // Helper function untuk format tanggal untuk input (DD/MM/YYYY)
+    const formatDateForInput = (date: Date): string => {
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
+
+    // Helper function untuk parse input tanggal
+    const parseDateFromInput = (dateText: string): Date => {
+        if (!dateText || dateText.trim() === '') {
+            return new Date(); // Return current date if empty
+        }
+
+        // Remove any non-numeric characters except /
+        const cleanText = dateText.replace(/[^0-9/]/g, '');
+        const parts = cleanText.split('/');
+
+        if (parts.length === 3) {
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+            const year = parseInt(parts[2], 10);
+
+            // Basic validation
+            if (day >= 1 && day <= 31 && month >= 0 && month <= 11 && year >= 1900 && year <= 2100) {
+                const date = new Date(year, month, day);
+                // Check if the date is valid (handles cases like 31/02/2023)
+                if (date.getDate() === day && date.getMonth() === month && date.getFullYear() === year) {
+                    return date;
+                }
+            }
+        }
+
+        // Return current date if parsing fails
+        return new Date();
+    };
+
+    // Helper function untuk format input tanggal dengan validasi
+    const formatDateInputText = (text: string): string => {
+        // Remove all non-numeric characters except /
+        let cleanText = text.replace(/[^0-9/]/g, '');
+        
+        // Auto-add slashes as user types
+        if (cleanText.length >= 2 && cleanText.charAt(2) !== '/') {
+            cleanText = cleanText.substring(0, 2) + '/' + cleanText.substring(2);
+        }
+        if (cleanText.length >= 5 && cleanText.charAt(5) !== '/') {
+            cleanText = cleanText.substring(0, 5) + '/' + cleanText.substring(5);
+        }
+        
+        // Limit to DD/MM/YYYY format
+        if (cleanText.length > 10) {
+            cleanText = cleanText.substring(0, 10);
+        }
+        
+        return cleanText;
+    };
 
     // Helper function untuk validasi dan parsing decimal
     const parseDecimalInput = (text: string): number => {
@@ -199,12 +266,15 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
                 return;
             }
 
+            // Parse the transaction date, use current date if invalid
+            const finalTransactionDate = parseDateFromInput(transactionDateText);
+
             await onCreatePurchase({
                 supplierName: supplierName.trim(),
                 userId: 'user123', // Ganti dengan user ID sebenarnya
                 items,
                 paidAmount,
-                saleDate: new Date().toISOString()
+                saleDate: finalTransactionDate.toISOString()
             });
 
             // Reset form setelah berhasil
@@ -225,6 +295,11 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
             setHargaBeliText('');
             setHargaJualText('');
             setPaidAmountText('');
+            
+            // Reset transaction date to today
+            const today = new Date();
+            setTransactionDate(today);
+            setTransactionDateText(formatDateForInput(today));
 
         } catch (error) {
             console.error('Error creating purchase:', error);
@@ -443,6 +518,41 @@ const CreatePurchase: React.FC<CreatePurchaseProps> = ({
                                 <MaterialIcons name="arrow-drop-down" size={24} color="#6c5ce7" />
                             </TouchableOpacity>
                         </View>
+                    </View>
+
+                    {/* Transaction Date Input */}
+                    <View style={styles.inputGroup}>
+                        <View style={styles.inputLabelContainer}>
+                            <Text style={styles.inputLabel}>Tanggal Transaksi</Text>
+                            <Text style={styles.inputDescription}>
+                                Format: DD/MM/YYYY (kosongkan untuk hari ini)
+                            </Text>
+                        </View>
+                        <View style={styles.dateInputContainer}>
+                            <MaterialIcons name="event" size={20} color="#6c5ce7" style={styles.dateIcon} />
+                            <TextInput
+                                placeholder="DD/MM/YYYY"
+                                value={transactionDateText}
+                                onChangeText={(text) => {
+                                    const formattedText = formatDateInputText(text);
+                                    setTransactionDateText(formattedText);
+                                    setTransactionDate(parseDateFromInput(formattedText));
+                                }}
+                                keyboardType="numeric"
+                                style={[styles.dateInput, focusedInput === 'transactionDate' && styles.inputFocused]}
+                                onFocus={() => setFocusedInput('transactionDate')}
+                                onBlur={() => setFocusedInput(null)}
+                                maxLength={10}
+                            />
+                        </View>
+                        <Text style={styles.datePreview}>
+                            Tanggal: {transactionDate.toLocaleDateString('id-ID', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            })}
+                        </Text>
                     </View>
                 </View>
 
@@ -799,6 +909,29 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         height: 50,
     },
+    dateInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8f9ff',
+        borderWidth: 1,
+        borderColor: '#e6e7ff',
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        height: 50,
+    },
+    dateIcon: {
+        marginRight: 10,
+    },
+    dateInput: {
+        flex: 1,
+        fontSize: 16,
+        color: '#2d3436',
+    },
+    datePreview: {
+        fontSize: 14,
+        color: '#636e72',
+        marginTop: 5,
+    },
     rowInputs: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -1027,6 +1160,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 5,
     },
-});
+})
 
 export default CreatePurchase;

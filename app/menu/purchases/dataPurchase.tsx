@@ -59,7 +59,26 @@ export const DataPurchase: React.FC<DataPurchaseProps> = ({
         );
     };
 
-    const allPurchases = purchases || [];
+    // Filter data untuk 5 bulan terakhir dan urutkan dari terbaru
+    const filterAndSortPurchases = (purchases: any[]) => {
+        const now = new Date();
+        const fiveMonthsAgo = new Date();
+        fiveMonthsAgo.setMonth(now.getMonth() - 5);
+        
+        return purchases
+            .filter(purchase => {
+                if (!purchase.sale_date) return false;
+                const purchaseDate = new Date(purchase.sale_date);
+                return purchaseDate >= fiveMonthsAgo;
+            })
+            .sort((a, b) => {
+                const dateA = new Date(a.sale_date || 0);
+                const dateB = new Date(b.sale_date || 0);
+                return dateB.getTime() - dateA.getTime(); // Terbaru ke terlama
+            });
+    };
+
+    const allPurchases = filterAndSortPurchases(purchases || []);
     const pendingPurchases = allPurchases.filter(purchase => 
         !purchase.status && purchase.remaining_debt > 0
     );
@@ -202,7 +221,7 @@ export const DataPurchase: React.FC<DataPurchaseProps> = ({
                 <MaterialIcons name="receipt-long" size={64} color="#a0aec0" />
                 <Text style={styles.emptyTitle}>Belum Ada Pembelian</Text>
                 <Text style={styles.emptyText}>
-                    Buat transaksi pembelian pertama Anda
+                    Tidak ada pembelian dalam 5 bulan terakhir
                 </Text>
             </View>
         );
@@ -214,7 +233,7 @@ export const DataPurchase: React.FC<DataPurchaseProps> = ({
             <View style={styles.statsContainer}>
                 <View style={styles.statCard}>
                     <Text style={styles.statNumber}>{allPurchases.length}</Text>
-                    <Text style={styles.statLabel}>Total</Text>
+                    <Text style={styles.statLabel}>Total (5 Bulan)</Text>
                 </View>
                 <View style={styles.statCard}>
                     <Text style={styles.statNumber}>{pendingPurchases.length}</Text>
