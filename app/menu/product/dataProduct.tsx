@@ -252,7 +252,70 @@ const DataProductScreen = () => {
                 );
         };
 
-        const EmptyState = () => (
+        const renderListHeader = () => (
+                <>
+                        {/* Kolom Pencarian */}
+                        <View style={styles.searchContainer}>
+                                <MaterialIcons name="search" size={20} color="#666" style={styles.searchIcon} />
+                                <TextInput
+                                        style={styles.searchInput}
+                                        placeholder="Cari produk berdasarkan nama atau ID..."
+                                        value={searchTerm}
+                                        onChangeText={setSearchTerm}
+                                        placeholderTextColor="#999"
+                                />
+                                {searchTerm !== "" && (
+                                        <TouchableOpacity onPress={() => setSearchTerm("")}>
+                                                <MaterialIcons name="clear" size={20} color="#666" />
+                                        </TouchableOpacity>
+                                )}
+                        </View>
+
+                        {/* Statistik Ringkas */}
+                        <View style={styles.statsContainer}>
+                                <View style={styles.statItem}>
+                                        <Text style={styles.statNumber}>{filteredProducts.length}</Text>
+                                        <Text style={styles.statLabel}>Produk</Text>
+                                </View>
+                                <View style={styles.statItem}>
+                                        <Text style={styles.statNumber}>
+                                                {filteredProducts.reduce((sum, product) => sum + product.stock, 0)}
+                                        </Text>
+                                        <Text style={styles.statLabel}>Total Stok</Text>
+                                </View>
+                                <View style={styles.statItem}>
+                                        <Text style={styles.statNumber}>
+                                                {filteredProducts.filter(p => p.stock < 10).length}
+                                        </Text>
+                                        <Text style={styles.statLabel}>Stok Rendah</Text>
+                                </View>
+                        </View>
+
+                        {/* Tombol Buat Produk - hanya untuk admin */}
+                        <TouchableOpacity
+                                style={[
+                                        styles.createButton,
+                                        !isAdmin && styles.disabledButton
+                                ]}
+                                onPress={handleCreateProduct}
+                                disabled={!isAdmin}
+                        >
+                                <MaterialIcons
+                                        name="add"
+                                        size={20}
+                                        color={isAdmin ? "#fff" : "#999"}
+                                />
+                                <Text style={[
+                                        styles.createButtonText,
+                                        !isAdmin && styles.disabledButtonText
+                                ]}>
+                                        {isAdmin ? "Buat Produk Baru" : "Hanya Admin yang Dapat Membuat Produk"}
+                                </Text>
+                        </TouchableOpacity>
+                </>
+        );
+
+        const renderEmptyState = () => (
                 <View style={styles.emptyState}>
                         <MaterialIcons name="inventory" size={80} color="#ccc" />
                         <Text style={styles.emptyStateTitle}>Produk Tidak Ditemukan</Text>
@@ -287,73 +350,14 @@ const DataProductScreen = () => {
                                 }}
                         />
                         <View style={styles.container}>
-                                {/* Kolom Pencarian */}
-                                <View style={styles.searchContainer}>
-                                        <MaterialIcons name="search" size={20} color="#666" style={styles.searchIcon} />
-                                        <TextInput
-                                                style={styles.searchInput}
-                                                placeholder="Cari produk berdasarkan nama atau ID..."
-                                                value={searchTerm}
-                                                onChangeText={setSearchTerm}
-                                                placeholderTextColor="#999"
-                                        />
-                                        {searchTerm !== "" && (
-                                                <TouchableOpacity onPress={() => setSearchTerm("")}>
-                                                        <MaterialIcons name="clear" size={20} color="#666" />
-                                                </TouchableOpacity>
-                                        )}
-                                </View>
-
-                                {/* Statistik Ringkas */}
-                                <View style={styles.statsContainer}>
-                                        <View style={styles.statItem}>
-                                                <Text style={styles.statNumber}>{filteredProducts.length}</Text>
-                                                <Text style={styles.statLabel}>Produk</Text>
-                                        </View>
-                                        <View style={styles.statItem}>
-                                                <Text style={styles.statNumber}>
-                                                        {filteredProducts.reduce((sum, product) => sum + product.stock, 0)}
-                                                </Text>
-                                                <Text style={styles.statLabel}>Total Stok</Text>
-                                        </View>
-                                        <View style={styles.statItem}>
-                                                <Text style={styles.statNumber}>
-                                                        {filteredProducts.filter(p => p.stock < 10).length}
-                                                </Text>
-                                                <Text style={styles.statLabel}>Stok Rendah</Text>
-                                        </View>
-                                </View>
-
-                                {/* Tombol Buat Produk - hanya untuk admin */}
-                                <TouchableOpacity
-                                        style={[
-                                                styles.createButton,
-                                                !isAdmin && styles.disabledButton
-                                        ]}
-                                        onPress={handleCreateProduct}
-                                        disabled={!isAdmin}
-                                >
-                                        <MaterialIcons
-                                                name="add"
-                                                size={20}
-                                                color={isAdmin ? "#fff" : "#999"}
-                                        />
-                                        <Text style={[
-                                                styles.createButtonText,
-                                                !isAdmin && styles.disabledButtonText
-                                        ]}>
-                                                {isAdmin ? "Buat Produk Baru" : "Hanya Admin yang Dapat Membuat Produk"}
-                                        </Text>
-                                </TouchableOpacity>
-
-                                {/* Daftar Produk */}
                                 <FlatList
                                         data={filteredProducts}
                                         renderItem={renderProductCard}
                                         keyExtractor={(item) => item.product_id}
                                         showsVerticalScrollIndicator={false}
                                         contentContainerStyle={styles.listContainer}
-                                        ListEmptyComponent={EmptyState}
+                                        ListHeaderComponent={renderListHeader}
+                                        ListEmptyComponent={renderEmptyState}
                                 />
                         </View>
                 </>
