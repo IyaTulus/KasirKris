@@ -1,22 +1,21 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { router, Stack } from "expo-router";
-import { 
-    Dimensions, 
-    StyleSheet, 
-    Text, 
-    TouchableOpacity, 
-    View, 
-    FlatList, 
-    TextInput, 
-    Alert,
-    Animated,
-    LayoutAnimation,
-    Platform,
-    UIManager
+import { navigate } from "expo-router/build/global-state/routing";
+import { useEffect, useState } from "react";
+import {
+        Alert,
+        Dimensions,
+        FlatList,
+        LayoutAnimation,
+        Platform,
+        StyleSheet,
+        Text,
+        TextInput,
+        TouchableOpacity,
+        UIManager,
+        View
 } from "react-native";
 import { useProductManagement } from "../../../hooks/product/ProductManagement";
-import { useState, useEffect } from "react";
-import { navigate } from "expo-router/build/global-state/routing";
 // Import hook untuk mendapatkan informasi user
 import { useAuth } from "../../../hooks/useAuth"; // Sesuaikan dengan path hook auth Anda
 
@@ -24,16 +23,16 @@ const { width, height } = Dimensions.get('window');
 
 // Aktifkan LayoutAnimation di Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
+        UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
 type Product = {
-    product_id: string;
-    name: string;
-    hargaBeli: number;
-    hargaJual: number;
-    satuan: number;
-    stock: number;
+        product_id: string;
+        name: string;
+        hargaBeli: number;
+        hargaJual: number;
+        satuan: number;
+        stock: number;
 };
 
 const DataProductScreen = () => {
@@ -49,7 +48,7 @@ const DataProductScreen = () => {
         // Filter produk berdasarkan kata kunci pencarian
         useEffect(() => {
                 if (!products) return;
-                
+
                 if (searchTerm.trim() === "") {
                         setFilteredProducts(products);
                 } else {
@@ -176,10 +175,10 @@ const DataProductScreen = () => {
                                                         </Text>
                                                 </View>
                                         </View>
-                                        <MaterialIcons 
-                                                name={isExpanded ? "expand-less" : "expand-more"} 
-                                                size={24} 
-                                                color="#666" 
+                                        <MaterialIcons
+                                                name={isExpanded ? "expand-less" : "expand-more"}
+                                                size={24}
+                                                color="#666"
                                         />
                                 </TouchableOpacity>
 
@@ -285,7 +284,7 @@ const DataProductScreen = () => {
                                                         <View style={styles.backButton} />
                                                 </View>
                                         ),
-                                }} 
+                                }}
                         />
                         <View style={styles.container}>
                                 {/* Kolom Pencarian */}
@@ -334,10 +333,10 @@ const DataProductScreen = () => {
                                         onPress={handleCreateProduct}
                                         disabled={!isAdmin}
                                 >
-                                        <MaterialIcons 
-                                                name="add" 
-                                                size={20} 
-                                                color={isAdmin ? "#fff" : "#999"} 
+                                        <MaterialIcons
+                                                name="add"
+                                                size={20}
+                                                color={isAdmin ? "#fff" : "#999"}
                                         />
                                         <Text style={[
                                                 styles.createButtonText,

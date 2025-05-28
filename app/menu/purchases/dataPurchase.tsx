@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { navigate } from 'expo-router/build/global-state/routing';
 
 interface DataPurchaseProps {
     purchases: any[];
@@ -200,7 +201,7 @@ export const DataPurchase: React.FC<DataPurchaseProps> = ({
                             
                             {!isPaid && hasDebt && (
                                 <TouchableOpacity
-                                    onPress={() => handlePayment(purchase.purchase_id)}
+                                    onPress={() => navigate(`../payment/payment?purchase_id=${purchase.purchase_id}`)}
                                     style={[styles.actionButton, styles.paymentButton]}
                                     disabled={loading}
                                 >
