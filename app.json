@@ -34,7 +34,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+       "@config-plugins/react-native-ble-plx"
     ],
     "experiments": {
       "typedRoutes": true

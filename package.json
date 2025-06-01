@@ -5,12 +5,13 @@
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint"
   },
   "dependencies": {
+    "@config-plugins/react-native-ble-plx": "^7.0.0",
     "@expo/vector-icons": "^14.1.0",
     "@react-native-async-storage/async-storage": "^1.24.0",
     "@react-native-picker/picker": "2.11.0",
@@ -19,9 +20,10 @@
     "@react-navigation/native": "^7.1.6",
     "@react-navigation/stack": "^7.3.2",
     "eas-cli": "^16.6.2",
-    "expo": "~53.0.9",
+    "expo": "^49.0.0",
     "expo-blur": "~14.1.4",
     "expo-constants": "~17.1.6",
+    "expo-dev-client": "~5.1.8",
     "expo-font": "~13.3.1",
     "expo-haptics": "~14.1.4",
     "expo-image": "~2.1.7",
