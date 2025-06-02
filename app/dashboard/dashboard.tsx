@@ -74,7 +74,7 @@ const DashboardKasir: React.FC = () => {
   };
 
   const handleSettingsPress = (): void => {
-    navigate('/settings/seting');
+    navigate('/dashboard/dashboard');
   };
 
   const renderHeader = () => (
@@ -109,23 +109,25 @@ const DashboardKasir: React.FC = () => {
     <View style={styles.menuButtonsContainer}>
       {user?.role === 'admin' && (
         <>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[styles.menuButton, styles.menuButtonLaporan]}
           >
             <Text style={styles.menuButtonText}>Laporan</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <TouchableOpacity
             style={[styles.menuButton, styles.menuButtonOther]}
+
+            onPress={() => navigate('/tesBt/tesBt')}
           >
-            <Text style={styles.menuButtonText}>Button</Text>
+            <Text style={styles.menuButtonText}>TestPrint</Text>
           </TouchableOpacity>
         </>
       )}
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={[styles.menuButton, styles.menuButtonKasir]}
       >
         <Text style={styles.menuButtonText}>Kasir</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 
@@ -164,29 +166,29 @@ const DashboardKasir: React.FC = () => {
         contentContainerStyle={styles.scrollContent}
       >
         {/* Total Penjualan Card */}
-        {renderTotalSalesCard()}
+        {/* {renderTotalSalesCard()} */}
 
         {/* Info Cards Container */}
-        <View style={styles.infoCardsContainer}>
+        {/* <View style={styles.infoCardsContainer}>
           {infoCardsData.map((item, index) => renderInfoCard(item, index))}
-        </View>
+        </View> */}
 
         {/* Menu Buttons */}
         {renderMenuButtons()}
 
         {/* Transaksi Terbaru */}
-        {renderTransactionSection(
+        {/* {renderTransactionSection(
           'Transaksi Terbaru',
           recentTransactions,
           'sale'
-        )}
+        )} */}
 
         {/* Pembelian Terbaru */}
-        {renderTransactionSection(
+        {/* {renderTransactionSection(
           'Pembelian Terbaru',
           recentPurchases,
           'purchase'
-        )}
+        )} */}
       </ScrollView>
     </>
   );
