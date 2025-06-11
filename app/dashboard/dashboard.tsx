@@ -74,7 +74,7 @@ const DashboardKasir: React.FC = () => {
   };
 
   const handleSettingsPress = (): void => {
-    navigate('/dashboard/dashboard');
+    navigate('/settings/seting');
   };
 
   const renderHeader = () => (

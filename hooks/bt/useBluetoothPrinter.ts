@@ -9,6 +9,7 @@ export interface BluetoothDevice {
   rssi?: number;
   serviceUUIDs?: string[];
   manufacturerData?: string;
+  isConnectable?: boolean;
 }
 
 export interface ScanStatus {
@@ -49,12 +50,14 @@ export async function requestPermissions(): Promise<boolean> {
   return true;
 }
 
-export async function scanPrinters(
+// Fungsi untuk scan semua device Bluetooth
+export async function scanAllDevices(
   onDeviceFound: (device: BluetoothDevice) => void,
   onScanStart: () => void,
   onScanStop: () => void,
   onError: (error: string) => void,
-  scanDuration: number = 10000 // 10 seconds default
+  scanDuration: number = 30000, // 30 detik default
+  allowDuplicates: boolean = false // Opsi untuk mengizinkan duplikasi
 ) {
   const permissionGranted = await requestPermissions();
   
@@ -64,7 +67,62 @@ export async function scanPrinters(
   }
 
   onScanStart();
-  const foundDevices = new Set<string>(); // To prevent duplicates
+  const foundDevices = new Set<string>(); // Untuk mencegah duplikasi
+
+  const scanTimer = setTimeout(() => {
+    manager.stopDeviceScan();
+    onScanStop();
+    console.log('Scan completed after timeout');
+  }, scanDuration);
+
+  manager.startDeviceScan(null, null, (error, device) => {
+    if (error) {
+      clearTimeout(scanTimer);
+      console.log('Scan error:', error);
+      onError(`Scan error: ${error.message}`);
+      onScanStop();
+      return;
+    }
+
+    if (device) {
+      // Cek duplikasi jika allowDuplicates = false
+      if (!allowDuplicates && foundDevices.has(device.id)) {
+        return;
+      }
+
+      foundDevices.add(device.id);
+      const deviceInfo: BluetoothDevice = {
+        id: device.id,
+        name: device.name || 'Unknown Device',
+        rssi: device.rssi || undefined,
+        serviceUUIDs: device.serviceUUIDs || undefined,
+        manufacturerData: device.manufacturerData || undefined,
+        isConnectable: device.isConnectable || undefined,
+      };
+      
+      console.log('Found Bluetooth device:', deviceInfo);
+      onDeviceFound(deviceInfo);
+    }
+  });
+}
+
+// Fungsi khusus untuk scan printer (tetap dipertahankan)
+export async function scanPrinters(
+  onDeviceFound: (device: BluetoothDevice) => void,
+  onScanStart: () => void,
+  onScanStop: () => void,
+  onError: (error: string) => void,
+  scanDuration: number = 120000
+) {
+  const permissionGranted = await requestPermissions();
+  
+  if (!permissionGranted) {
+    onError('Bluetooth permissions not granted');
+    return;
+  }
+
+  onScanStart();
+  const foundDevices = new Set<string>();
 
   const scanTimer = setTimeout(() => {
     manager.stopDeviceScan();
@@ -82,7 +140,7 @@ export async function scanPrinters(
     }
 
     if (device && device.name && !foundDevices.has(device.id)) {
-      // Filter for printer-like devices
+      // Filter untuk perangkat printer
       const isPrinterDevice = 
         device.name.toLowerCase().includes('pos') ||
         device.name.toLowerCase().includes('printer') ||
@@ -98,11 +156,63 @@ export async function scanPrinters(
           rssi: device.rssi || undefined,
           serviceUUIDs: device.serviceUUIDs || undefined,
           manufacturerData: device.manufacturerData || undefined,
+          isConnectable: device.isConnectable || undefined,
         };
         
         console.log('Found printer device:', deviceInfo);
         onDeviceFound(deviceInfo);
       }
+    }
+  });
+}
+
+// Fungsi untuk scan device berdasarkan filter custom
+export async function scanDevicesWithFilter(
+  onDeviceFound: (device: BluetoothDevice) => void,
+  onScanStart: () => void,
+  onScanStop: () => void,
+  onError: (error: string) => void,
+  filterFunction: (device: any) => boolean, // Custom filter function
+  scanDuration: number = 30000
+) {
+  const permissionGranted = await requestPermissions();
+  
+  if (!permissionGranted) {
+    onError('Bluetooth permissions not granted');
+    return;
+  }
+
+  onScanStart();
+  const foundDevices = new Set<string>();
+
+  const scanTimer = setTimeout(() => {
+    manager.stopDeviceScan();
+    onScanStop();
+    console.log('Scan completed after timeout');
+  }, scanDuration);
+
+  manager.startDeviceScan(null, null, (error, device) => {
+    if (error) {
+      clearTimeout(scanTimer);
+      console.log('Scan error:', error);
+      onError(`Scan error: ${error.message}`);
+      onScanStop();
+      return;
+    }
+
+    if (device && !foundDevices.has(device.id) && filterFunction(device)) {
+      foundDevices.add(device.id);
+      const deviceInfo: BluetoothDevice = {
+        id: device.id,
+        name: device.name || 'Unknown Device',
+        rssi: device.rssi || undefined,
+        serviceUUIDs: device.serviceUUIDs || undefined,
+        manufacturerData: device.manufacturerData || undefined,
+        isConnectable: device.isConnectable || undefined,
+      };
+      
+      console.log('Found filtered device:', deviceInfo);
+      onDeviceFound(deviceInfo);
     }
   });
 }
